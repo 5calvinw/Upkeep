@@ -1,0 +1,92 @@
+Project: Upkeep — Maintenance Accountability & Insight System
+A web-based system for small property managers (5–50 units) to handle maintenance requests with structured workflows, audit trails, and analytics. Built as a Software Engineering final project using the Iterative and Incremental model.
+
+Tech Stack
+
+Frontend: Flutter (Dart), Flutter Web, go_router for routing, fl_chart for charts
+Backend: FastAPI (Python), Pydantic, Uvicorn
+Database: PostgreSQL, SQLAlchemy (ORM), Supabase (DB deployment)
+Auth: JWT-based
+Deployment: Vercel
+
+
+Roles
+
+Tenant: submits requests, views status, closes ticket at the end
+Property Manager: acknowledges, works on, and resolves tickets
+
+
+5 Ticket States (in order, do not change)
+
+Ticket Opened — by tenant
+Problem Acknowledged — by manager
+Resolving In Progress — by manager
+Problem Resolved — by manager
+Ticket Closed — confirmed and closed by tenant
+
+State transitions are enforced at the API level. No skipping states.
+
+Pages by Role
+Tenant:
+
+/login
+/tenant/dashboard — list of their tickets with status badges, submit button
+/tickets/new — submission form: title, description, category, urgency, optional photo
+/tickets/[id] — read-only detail, horizontal stepper, audit log, close-ticket modal when status is Problem Resolved
+
+Manager:
+
+/manager/dashboard — all tickets across units, filters by status/unit, summary strip (SLA breaches, unacknowledged)
+/manager/tickets/[id] — full detail, next-state-only button, communication log/notes panel, SLA indicator badge
+/manager/analytics — avg resolution time, open/closed ratio, monthly trend, tickets per unit, SLA breach count
+/manager/units — per-unit overview with recurring issue flags
+/manager/units/[unitId] — full ticket history for one unit
+
+Both roles:
+
+/profile — name, email, password change
+/manager/settings — configurable SLA thresholds per category
+
+
+4 Iterations
+Iteration 1 — Foundation:
+
+JWT auth, Ticket CRUD, core UI pages
+Pages: /login, /tenant/dashboard, /tickets/new, /tickets/[id] (basic), /manager/dashboard (basic), /manager/tickets/[id] (status button, next state only)
+Must demo full 5-state lifecycle end-to-end by end of iteration
+
+Iteration 2 — Accountability Logic:
+
+Audit log recording on every state change
+Horizontal stepper UI on ticket detail pages
+Communication/notes log panel for manager
+Tenant close-ticket confirmation modal
+State transitions enforced at backend level
+
+Iteration 3 — Insight & SLA:
+
+SLA thresholds per category (e.g. urgent=24hr, normal=72hr)
+SLA indicator badge on manager ticket detail
+Analytics page with Recharts (use fl_chart in Flutter)
+Unit overview and unit detail pages
+Recurring issue detection per unit
+
+Iteration 4 — Hardening & Testing:
+
+Unit tests (pytest), integration tests (FastAPI TestClient)
+Role restriction checks (manual, from separate accounts)
+/manager/settings for configurable SLA thresholds
+/profile page for both roles
+Final Vercel deployment
+
+
+UI/UX Design Approach
+
+Design in Figma iteration by iteration, not all upfront
+Do a rough low-fidelity sketch of the full system at the start for shared mental model
+Full Figma screens only for the iteration you're about to build
+
+
+Core Flow (finalized)
+
+Tenant submits → manager acknowledges → manager works on it → manager marks resolved → tenant reviews → if satisfied: closes ticket; if not: loops back to Resolving In Progress on manager side
