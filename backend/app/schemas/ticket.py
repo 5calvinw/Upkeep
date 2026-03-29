@@ -39,6 +39,29 @@ class AuditLogOut(BaseModel):
     to_status: TicketStatus
     note: str | None
     actor_id: UUID
+    actor_name: str = ""
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class MessageCreate(BaseModel):
+    content: str = ""
+    photo_url: str | None = None
+
+
+class MessageOut(BaseModel):
+    id: UUID
+    content: str
+    photo_url: str | None = None
+    sender_id: UUID
+    sender_name: str = ""
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class TicketDetailOut(TicketOut):
+    tenant_name: str = ""
+    unit_number: str = ""
+    property_name: str = ""

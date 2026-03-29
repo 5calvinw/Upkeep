@@ -6,8 +6,12 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_db, get_current_user, require_manager, require_tenant
 from app.models.ticket import MaintenanceRequest, TicketStatus
 from app.models.audit_log import AuditLog
+from app.models.message import Message
 from app.models.user import User, UserRole
-from app.schemas.ticket import TicketCreate, TicketOut, TicketStatusUpdate, AuditLogOut
+from app.schemas.ticket import (
+    TicketCreate, TicketOut, TicketStatusUpdate, TicketDetailOut,
+    AuditLogOut, MessageCreate, MessageOut,
+)
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -26,6 +30,26 @@ TRANSITION_ROLE: dict[TicketStatus, UserRole] = {
     TicketStatus.IN_PROGRESS: UserRole.MANAGER,   # IN_PROGRESS → RESOLVED
     TicketStatus.RESOLVED: UserRole.TENANT,        # RESOLVED → CLOSED
 }
+
+
+def _ticket_to_detail(ticket: MaintenanceRequest) -> dict:
+    data = {
+        "id": ticket.id,
+        "title": ticket.title,
+        "description": ticket.description,
+        "category": ticket.category,
+        "urgency": ticket.urgency,
+        "status": ticket.status,
+        "photo_url": ticket.photo_url,
+        "tenant_id": ticket.tenant_id,
+        "unit_id": ticket.unit_id,
+        "created_at": ticket.created_at,
+        "updated_at": ticket.updated_at,
+        "tenant_name": ticket.tenant.full_name if ticket.tenant else "",
+        "unit_number": ticket.unit.unit_number if ticket.unit else "",
+        "property_name": ticket.unit.property.name if ticket.unit and ticket.unit.property else "",
+    }
+    return data
 
 
 @router.post("", response_model=TicketOut, status_code=status.HTTP_201_CREATED)
@@ -61,21 +85,22 @@ def create_ticket(
     return ticket
 
 
-@router.get("", response_model=list[TicketOut])
+@router.get("", response_model=list[TicketDetailOut])
 def list_tickets(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     if current_user.role == UserRole.TENANT:
-        return db.query(MaintenanceRequest).filter(
+        tickets = db.query(MaintenanceRequest).filter(
             MaintenanceRequest.tenant_id == current_user.id
         ).order_by(MaintenanceRequest.created_at.desc()).all()
+    else:
+        tickets = db.query(MaintenanceRequest).order_by(MaintenanceRequest.created_at.desc()).all()
 
-    # Manager sees all tickets
-    return db.query(MaintenanceRequest).order_by(MaintenanceRequest.created_at.desc()).all()
+    return [_ticket_to_detail(t) for t in tickets]
 
 
-@router.get("/{ticket_id}", response_model=TicketOut)
+@router.get("/{ticket_id}", response_model=TicketDetailOut)
 def get_ticket(
     ticket_id: UUID,
     db: Session = Depends(get_db),
@@ -89,7 +114,7 @@ def get_ticket(
     if current_user.role == UserRole.TENANT and ticket.tenant_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
-    return ticket
+    return _ticket_to_detail(ticket)
 
 
 @router.patch("/{ticket_id}/status", response_model=TicketOut)
@@ -153,4 +178,87 @@ def get_audit_log(
     if current_user.role == UserRole.TENANT and ticket.tenant_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
-    return ticket.audit_logs
+    logs = (
+        db.query(AuditLog)
+        .filter(AuditLog.ticket_id == ticket_id)
+        .order_by(AuditLog.created_at.asc())
+        .all()
+    )
+    return [
+        AuditLogOut(
+            id=log.id,
+            from_status=log.from_status,
+            to_status=log.to_status,
+            note=log.note,
+            actor_id=log.actor_id,
+            actor_name=log.actor.full_name if log.actor else "",
+            created_at=log.created_at,
+        )
+        for log in logs
+    ]
+
+
+@router.get("/{ticket_id}/messages", response_model=list[MessageOut])
+def list_messages(
+    ticket_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ticket = db.get(MaintenanceRequest, ticket_id)
+    if ticket is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+
+    if current_user.role == UserRole.TENANT and ticket.tenant_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    messages = (
+        db.query(Message)
+        .filter(Message.ticket_id == ticket_id)
+        .order_by(Message.created_at.asc())
+        .all()
+    )
+    return [
+        MessageOut(
+            id=m.id,
+            content=m.content,
+            photo_url=m.photo_url,
+            sender_id=m.sender_id,
+            sender_name=m.sender.full_name if m.sender else "",
+            created_at=m.created_at,
+        )
+        for m in messages
+    ]
+
+
+@router.post("/{ticket_id}/messages", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
+def create_message(
+    ticket_id: UUID,
+    body: MessageCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ticket = db.get(MaintenanceRequest, ticket_id)
+    if ticket is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+
+    if current_user.role == UserRole.TENANT and ticket.tenant_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    msg = Message(
+        content=body.content,
+        photo_url=body.photo_url,
+        ticket_id=ticket_id,
+        sender_id=current_user.id,
+    )
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+
+    return MessageOut(
+        id=msg.id,
+        content=msg.content,
+        photo_url=msg.photo_url,
+        sender_id=msg.sender_id,
+        sender_name=current_user.full_name,
+        created_at=msg.created_at,
+    )
