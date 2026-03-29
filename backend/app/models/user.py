@@ -18,7 +18,7 @@ class User(Base, TimestampMixin):
     
     # Relationships
     unit = relationship("PropertyUnit", back_populates="tenants")
-    managed_properties = relationship("PropertyUnit", back_populates="manager")
+    managed_properties = relationship("Property", back_populates="manager")
     requests = relationship("MaintenanceRequest", back_populates="tenant")
     sent_messages = relationship("Message", back_populates="sender")
     audit_actions = relationship("AuditLog", back_populates="actor")
