@@ -5,7 +5,7 @@ class Ticket {
   final String category;
   final String urgency;
   final String status;
-  final String? photoUrl;
+  final List<String> photoUrls;
   final String tenantId;
   final String unitId;
   final String tenantName;
@@ -21,7 +21,7 @@ class Ticket {
     required this.category,
     required this.urgency,
     required this.status,
-    this.photoUrl,
+    this.photoUrls = const [],
     required this.tenantId,
     required this.unitId,
     this.tenantName = '',
@@ -39,7 +39,10 @@ class Ticket {
       category: json['category']?.toString() ?? '',
       urgency: json['urgency']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
-      photoUrl: json['photo_url']?.toString(),
+      photoUrls: (json['photo_urls'] as List<dynamic>?)
+              ?.map((item) => item.toString())
+              .toList() ??
+          (json['photo_url'] != null ? [json['photo_url'].toString()] : const []),
       tenantId: json['tenant_id']?.toString() ?? '',
       unitId: json['unit_id']?.toString() ?? '',
       tenantName: json['tenant_name']?.toString() ?? '',
@@ -102,6 +105,8 @@ class Ticket {
   }
 
   bool get isClosed => status == 'closed';
+
+  String? get photoUrl => photoUrls.isEmpty ? null : photoUrls.first;
 }
 
 class AuditLogEntry {

@@ -11,6 +11,7 @@ Creates:
   - Ticket:   "There are bats in my attic" (ACKNOWLEDGED)
   - Messages + Audit trail
 """
+from datetime import datetime, timezone
 
 from app.db.base import *  # noqa – registers all models
 from app.db.session import SessionLocal, engine
@@ -20,7 +21,19 @@ from app.models.property import Property, PropertyUnit
 from app.models.ticket import MaintenanceRequest, TicketStatus, TicketCategory, TicketUrgency
 from app.models.message import Message
 from app.models.audit_log import AuditLog
-from app.core.security import hash_password
+from app.core.security import hash_password, create_invite_token
+from app.core.config import JWT_SECRET_KEY, JWT_ALGORITHM
+from jose import jwt
+
+
+def create_hard_seeded_invite_token(unit_id):
+    payload = {
+        "unit_id": str(unit_id),
+        "type": "invite",
+        "seeded": True,
+        "exp": datetime(2099, 1, 1, tzinfo=timezone.utc),
+    }
+    return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 def seed():
     Base.metadata.create_all(bind=engine)
@@ -28,8 +41,23 @@ def seed():
 
     try:
         # Check if already seeded
-        if db.query(User).filter(User.email == "manager@upkeep.com").first():
-            print("Database already seeded. Skipping.")
+        existing_manager = db.query(User).filter(User.email == "manager@upkeep.com").first()
+        if existing_manager:
+            existing_unit = db.query(PropertyUnit).filter(PropertyUnit.unit_number == "402A").first()
+            if existing_unit is None:
+                print("Database already seeded, but unit 402A not found. No invite token generated.")
+                return
+
+            invite_token = create_invite_token(existing_unit.id)
+            hard_seeded_token = create_hard_seeded_invite_token(existing_unit.id)
+            invite_url = f"http://localhost:3000/register?token={invite_token}"
+            hard_seeded_url = f"http://localhost:3000/register?token={hard_seeded_token}"
+
+            print("Database already seeded. Generated tokens for unit 402A:")
+            print(f"  Fresh Invite Token: {invite_token}")
+            print(f"  Fresh Register URL: {invite_url}")
+            print(f"  Hard Invite Token:  {hard_seeded_token}")
+            print(f"  Hard Register URL:  {hard_seeded_url}")
             return
 
         # ── Users ──────────────────────────────────────────────────────────
@@ -129,12 +157,20 @@ def seed():
         db.add_all([msg1, msg2, msg3, msg4])
 
         db.commit()
+        invite_token = create_invite_token(unit.id)
+        hard_seeded_token = create_hard_seeded_invite_token(unit.id)
+        invite_url = f"http://localhost:3000/register?token={invite_token}"
+        hard_seeded_url = f"http://localhost:3000/register?token={hard_seeded_token}"
 
         print("Seeded successfully!")
         print()
         print(f"  Manager:  manager@upkeep.com / password123")
         print(f"  Tenant:   calvin@upkeep.com  / password123")
         print(f"  Ticket ID: {ticket.id}")
+        print(f"  Fresh Invite Token: {invite_token}")
+        print(f"  Fresh Register URL: {invite_url}")
+        print(f"  Hard Invite Token:  {hard_seeded_token}")
+        print(f"  Hard Register URL:  {hard_seeded_url}")
         print()
         print(f"  Visit: /tickets/{ticket.id}")
 

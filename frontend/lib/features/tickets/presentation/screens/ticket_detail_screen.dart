@@ -544,7 +544,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Attachments (${ticket.photoUrl != null ? 1 : 0})',
+            'Attachments (${ticket.photoUrls.length})',
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -552,26 +552,32 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          if (ticket.photoUrl != null)
-            GestureDetector(
-              onTap: () => _showImageDialog(ticket.photoUrl!),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  ticket.photoUrl!,
-                  width: 130,
-                  height: 90,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 130,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD9D9D9),
-                      borderRadius: BorderRadius.circular(10),
+          if (ticket.photoUrls.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: ticket.photoUrls.map((url) {
+                return GestureDetector(
+                  onTap: () => _showImageDialog(url),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      url,
+                      width: 130,
+                      height: 90,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        width: 130,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD9D9D9),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              }).toList(),
             )
           else
             Wrap(

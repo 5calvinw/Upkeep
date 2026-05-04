@@ -123,7 +123,7 @@ class TicketService {
     required String description,
     required String category,
     required String urgency,
-    String? photoUrl,
+    List<String> photoUrls = const [],
   }) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/tickets'),
@@ -133,7 +133,7 @@ class TicketService {
         'description': description,
         'category': category,
         'urgency': urgency,
-        'photo_url': photoUrl,
+        'photo_urls': photoUrls,
       }),
     );
     if (response.statusCode == 201 || response.statusCode == 200) {

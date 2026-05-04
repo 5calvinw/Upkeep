@@ -5,6 +5,7 @@ import 'package:frontend/features/tickets/data/services/ticket_service.dart';
 import 'package:frontend/shared/widgets/side_nav.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:typed_data';
 
 class NewTicketScreen extends StatefulWidget {
   const NewTicketScreen({super.key});
@@ -18,9 +19,11 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final TicketService _ticketService = TicketService();
+  final ImagePicker _imagePicker = ImagePicker();
+  static const int _maxAttachments = 4;
 
   String _selectedCategory = TicketCategory.values.first['value']!;
-  XFile? _pickedImage;
+  List<XFile?> _pickedImages = [];
   bool _isLoading = false;
   bool _isPrivate = false;
   bool _isUrgent = false;
@@ -65,35 +68,49 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
-    if (file != null) setState(() => _pickedImage = file);
+    if (_selectedImages.length >= _maxAttachments) return;
+
+    final file = await _imagePicker.pickImage(source: ImageSource.gallery);
+    if (file != null) {
+      setState(() => _pickedImages = [..._selectedImages, file]);
+    }
   }
+
+  void _removeImage(int index) {
+    final nextImages = [..._selectedImages]..removeAt(index);
+    setState(() => _pickedImages = nextImages);
+  }
+
+  List<XFile> get _selectedImages =>
+      _pickedImages.whereType<XFile>().toList(growable: false);
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
     try {
-      String? photoUrl;
-      if (_pickedImage != null) {
-        final bytes = await _pickedImage!.readAsBytes();
-        photoUrl = await _ticketService.uploadPhoto(bytes, _pickedImage!.name);
+      final uploadedUrls = <String>[];
+      for (final image in _selectedImages) {
+        final bytes = await image.readAsBytes();
+        final photoUrl = await _ticketService.uploadPhoto(bytes, image.name);
+        uploadedUrls.add(photoUrl);
       }
       final ticket = await _ticketService.createTicket(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         category: _selectedCategory,
         urgency: _isUrgent ? 'urgent' : 'normal',
-        photoUrl: photoUrl,
+        photoUrls: uploadedUrls,
       );
       if (mounted) context.go('/tickets/${ticket.id}');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: Colors.red,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -125,7 +142,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height:2),
+                  const SizedBox(height: 2),
                   SizedBox(
                     width: 733,
                     child: Text(
@@ -212,9 +229,9 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                           controller: _titleController,
                           maxLength: 100,
                           style: GoogleFonts.inter(fontSize: 13),
-                          decoration: _inputDecoration(null).copyWith(
-                            counterText: '',
-                          ),
+                          decoration: _inputDecoration(
+                            null,
+                          ).copyWith(counterText: ''),
                           validator: (v) => (v == null || v.trim().isEmpty)
                               ? 'Title is required'
                               : null,
@@ -245,13 +262,17 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                           // ignore: deprecated_member_use
                           value: _selectedCategory,
                           style: GoogleFonts.inter(
-                              fontSize: 13, color: Colors.black87),
+                            fontSize: 13,
+                            color: Colors.black87,
+                          ),
                           decoration: _inputDecoration(null),
                           items: TicketCategory.values
-                              .map((e) => DropdownMenuItem(
-                                    value: e['value'],
-                                    child: Text(e['label']!),
-                                  ))
+                              .map(
+                                (e) => DropdownMenuItem(
+                                  value: e['value'],
+                                  child: Text(e['label']!),
+                                ),
+                              )
                               .toList(),
                           onChanged: (v) =>
                               setState(() => _selectedCategory = v!),
@@ -289,9 +310,9 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                           expands: true,
                           textAlignVertical: TextAlignVertical.top,
                           style: GoogleFonts.inter(fontSize: 13),
-                          decoration: _inputDecoration(null).copyWith(
-                            counterText: '',
-                          ),
+                          decoration: _inputDecoration(
+                            null,
+                          ).copyWith(counterText: ''),
                           validator: (v) => (v == null || v.trim().isEmpty)
                               ? 'Description is required'
                               : null,
@@ -316,56 +337,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      GestureDetector(
-                        onTap: _pickImage,
-                        child: Container(
-                          height: 166,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(5),
-                            border: Border.all(color: _inputBorder),
-                          ),
-                          child: _pickedImage == null
-                              ? Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.upload_outlined,
-                                        size: 28,
-                                        color: Color(0xFF94A3B8)),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Click to upload',
-                                      style: GoogleFonts.dmSans(
-                                          fontSize: 12,
-                                          color: const Color(0xFF94A3B8)),
-                                    ),
-                                  ],
-                                )
-                              : Center(
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.check_circle,
-                                          size: 18,
-                                          color: Color(0xFF16A34A)),
-                                      const SizedBox(width: 6),
-                                      Flexible(
-                                        child: Text(
-                                          _pickedImage!.name,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.inter(
-                                            fontSize: 12,
-                                            color: const Color(0xFF16A34A),
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                        ),
-                      ),
+                      _buildAttachmentsPanel(),
                     ],
                   ),
                 ),
@@ -382,10 +354,10 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                   height: 20,
                   child: Checkbox(
                     value: _isPrivate,
-                    onChanged: (v) =>
-                        setState(() => _isPrivate = v ?? false),
+                    onChanged: (v) => setState(() => _isPrivate = v ?? false),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(3)),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
                     activeColor: _navy,
                   ),
                 ),
@@ -401,10 +373,10 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                   height: 20,
                   child: Checkbox(
                     value: _isUrgent,
-                    onChanged: (v) =>
-                        setState(() => _isUrgent = v ?? false),
+                    onChanged: (v) => setState(() => _isUrgent = v ?? false),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(3)),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
                     activeColor: _navy,
                   ),
                 ),
@@ -433,7 +405,9 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : Text(
                             'Submit',
@@ -456,8 +430,9 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
 
   Widget _buildStatCards() {
     final totalTickets = _recentTickets.length;
-    final activeTickets =
-        _recentTickets.where((t) => t.status != 'closed').length;
+    final activeTickets = _recentTickets
+        .where((t) => t.status != 'closed')
+        .length;
 
     return Row(
       children: [
@@ -547,12 +522,10 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
         children: [
           // Table header
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: const BoxDecoration(
               color: Color(0xFFF2F4F6),
-              borderRadius:
-                  BorderRadius.vertical(top: Radius.circular(10)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
             ),
             child: Row(
               children: [
@@ -616,7 +589,9 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                 child: Text(
                   'No tickets yet.',
                   style: GoogleFonts.dmSans(
-                      fontSize: 13, color: Colors.black38),
+                    fontSize: 13,
+                    color: Colors.black38,
+                  ),
                 ),
               ),
             )
@@ -636,7 +611,8 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
         border: Border(
           bottom: BorderSide(
             color: const Color(0xFFD9D9D9),
-            width: index <
+            width:
+                index <
                     (_recentTickets.length > 5 ? 4 : _recentTickets.length - 1)
                 ? 1
                 : 0,
@@ -663,8 +639,11 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
             flex: 2,
             child: Row(
               children: [
-                Icon(Icons.label_outline,
-                    size: 13.5, color: const Color(0xFF334155)),
+                Icon(
+                  Icons.label_outline,
+                  size: 13.5,
+                  color: const Color(0xFF334155),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   _categoryLabel(ticket.category),
@@ -677,10 +656,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
               ],
             ),
           ),
-          Expanded(
-            flex: 2,
-            child: _buildStatusPill(ticket.status),
-          ),
+          Expanded(flex: 2, child: _buildStatusPill(ticket.status)),
           SizedBox(
             width: 100,
             child: GestureDetector(
@@ -714,21 +690,22 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
       'acknowledged': [
         const Color(0xFFFEF3C7),
         const Color(0xFF92400E),
-        'Pending'
+        'Pending',
       ],
       'in_progress': [
         const Color(0xFFD7E2FF),
         const Color(0xFF374765),
-        'In Progress'
+        'In Progress',
       ],
       'resolved': [
         const Color(0xFF6FFBBE),
         const Color(0xFF005236),
-        'Resolved'
+        'Resolved',
       ],
       'closed': [const Color(0xFFE2E8F0), const Color(0xFF475569), 'Closed'],
     };
-    final entry = map[status] ??
+    final entry =
+        map[status] ??
         [const Color(0xFFE2E8F0), const Color(0xFF475569), status];
 
     return Align(
@@ -778,12 +755,208 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
     );
   }
 
+  Widget _buildAttachmentsPanel() {
+    final selectedImages = _selectedImages;
+    final selectedCount = selectedImages.length;
+
+    return Container(
+      width: double.infinity,
+      height: 175,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: _inputBorder),
+      ),
+      child: selectedCount == 0
+          ? GestureDetector(
+              onTap: _pickImage,
+              child: _buildUploadPrompt(fullSize: true),
+            )
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final tileWidth = constraints.maxWidth / selectedCount;
+
+                return GestureDetector(
+                  onTap: selectedCount < _maxAttachments ? _pickImage : null,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (
+                              var index = 0;
+                              index < selectedImages.length;
+                              index++
+                            )
+                              _buildAttachmentTile(
+                                selectedImages[index],
+                                index,
+                                width: tileWidth,
+                                addRightGap: index < selectedCount - 1,
+                                showAddHint:
+                                    index == selectedCount - 1 &&
+                                    selectedCount < _maxAttachments,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '$selectedCount/$_maxAttachments attachments selected',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 11,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+    );
+  }
+
+  Widget _buildAttachmentTile(
+    XFile image,
+    int index, {
+    required double width,
+    required bool addRightGap,
+    required bool showAddHint,
+  }) {
+    return SizedBox(
+      width: width,
+      child: Padding(
+        padding: EdgeInsets.only(right: addRightGap ? 8 : 0),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFD9E2EC)),
+                ),
+                child: _buildFilledAttachmentTile(image),
+              ),
+            ),
+            Positioned(
+              top: 6,
+              right: addRightGap ? 14 : 6,
+              child: GestureDetector(
+                onTap: () => _removeImage(index),
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, size: 12, color: Colors.white),
+                ),
+              ),
+            ),
+            if (showAddHint)
+              Positioned(
+                left: 8,
+                top: 6,
+                child: Tooltip(
+                  message: 'Add photo',
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: const BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.add_photo_alternate_outlined,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUploadPrompt({bool fullSize = false}) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.upload_outlined, size: 28, color: Color(0xFF94A3B8)),
+        const SizedBox(height: 4),
+        Text(
+          fullSize ? 'Click to upload' : 'Add Photo',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.dmSans(
+            fontSize: fullSize ? 12 : 11,
+            color: const Color(0xFF94A3B8),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilledAttachmentTile(XFile image) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: FutureBuilder<Uint8List>(
+        future: image.readAsBytes(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          }
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.memory(snapshot.data!, fit: BoxFit.cover),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  color: const Color(0x99000000),
+                  child: Text(
+                    image.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   InputDecoration _inputDecoration(String? hint) {
     return InputDecoration(
       hintText: hint,
       hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.black38),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(5),
         borderSide: const BorderSide(color: _inputBorder),
