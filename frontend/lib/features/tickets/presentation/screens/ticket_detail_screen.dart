@@ -1,12 +1,12 @@
 import 'dart:typed_data';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:frontend/features/tickets/data/models/ticket.dart';
+import 'package:frontend/features/tickets/data/services/ticket_service.dart';
+import 'package:frontend/shared/widgets/side_nav.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import '../../data/models/ticket.dart';
-import '../../data/services/ticket_service.dart';
-import '../widgets/side_nav.dart';
 
 class TicketDetailScreen extends StatefulWidget {
   final String ticketId;

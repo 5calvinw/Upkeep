@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../data/services/auth_service.dart';
+import 'package:frontend/features/auth/data/auth_service.dart';
 
 class UnauthorizedScreen extends StatelessWidget {
   const UnauthorizedScreen({super.key});

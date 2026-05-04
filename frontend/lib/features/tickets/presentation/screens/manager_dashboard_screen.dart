@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:frontend/features/auth/data/auth_service.dart';
+import 'package:frontend/features/tickets/data/models/ticket.dart';
+import 'package:frontend/features/tickets/data/services/ticket_service.dart';
+import 'package:frontend/shared/widgets/side_nav.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../../data/models/ticket.dart';
-import '../../../data/services/auth_service.dart';
-import '../../../data/services/ticket_service.dart';
-import '../../widgets/side_nav.dart';
 
 class _NotificationItem {
   final String ticketId;

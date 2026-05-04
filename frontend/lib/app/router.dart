@@ -1,14 +1,14 @@
 import 'package:go_router/go_router.dart';
-import 'data/services/auth_service.dart';
-import 'presentation/screens/auth/login_screen.dart';
-import 'presentation/screens/auth/register_screen.dart';
-import 'presentation/screens/auth/unauthorized_screen.dart';
-import 'presentation/screens/ticket_detail_screen.dart';
-import 'presentation/screens/tenant/dashboard_screen.dart';
-import 'presentation/screens/tenant/new_ticket_screen.dart';
-import 'presentation/screens/manager/dashboard_screen.dart';
-import 'presentation/screens/manager/ticket_detail_screen.dart';
-import 'presentation/screens/manager/active_tickets_screen.dart';
+import 'package:frontend/features/auth/data/auth_service.dart';
+import 'package:frontend/features/auth/presentation/screens/login_screen.dart';
+import 'package:frontend/features/auth/presentation/screens/register_screen.dart';
+import 'package:frontend/features/auth/presentation/screens/unauthorized_screen.dart';
+import 'package:frontend/features/tickets/presentation/screens/ticket_detail_screen.dart';
+import 'package:frontend/features/tickets/presentation/screens/tenant_dashboard_screen.dart';
+import 'package:frontend/features/tickets/presentation/screens/new_ticket_screen.dart';
+import 'package:frontend/features/tickets/presentation/screens/manager_dashboard_screen.dart';
+import 'package:frontend/features/tickets/presentation/screens/manager_ticket_detail_screen.dart';
+import 'package:frontend/features/tickets/presentation/screens/manager_active_tickets_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/login',
