@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,6 +25,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   final ImagePicker _imagePicker = ImagePicker();
   XFile? _pendingImage;
   bool _isSending = false;
+  Timer? _liveRefreshTimer;
+  bool _isLiveRefreshing = false;
 
   Ticket? _ticket;
   List<AuditLogEntry> _auditLog = [];
@@ -40,12 +43,45 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _startLiveRefresh();
   }
 
   @override
   void dispose() {
+    _liveRefreshTimer?.cancel();
     _messageController.dispose();
     super.dispose();
+  }
+
+  void _startLiveRefresh() {
+    _liveRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _refreshLiveData();
+    });
+  }
+
+  Future<void> _refreshLiveData() async {
+    if (!mounted || _isLoading || _isSending || _isLiveRefreshing) return;
+
+    _isLiveRefreshing = true;
+    try {
+      final results = await Future.wait([
+        _ticketService.getTicket(widget.ticketId),
+        _ticketService.getAuditLog(widget.ticketId),
+        _ticketService.getMessages(widget.ticketId),
+      ]);
+
+      if (!mounted) return;
+
+      setState(() {
+        _ticket = results[0] as Ticket;
+        _auditLog = results[1] as List<AuditLogEntry>;
+        _messages = results[2] as List<TicketMessage>;
+      });
+    } catch (_) {
+      // Silent fail for background refresh to avoid noisy UX.
+    } finally {
+      _isLiveRefreshing = false;
+    }
   }
 
   Future<void> _loadData() async {
