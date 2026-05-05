@@ -27,8 +27,7 @@ class TenantDashboardScreen extends StatefulWidget {
   const TenantDashboardScreen({super.key});
 
   @override
-  State<TenantDashboardScreen> createState() =>
-      _TenantDashboardScreenState();
+  State<TenantDashboardScreen> createState() => _TenantDashboardScreenState();
 }
 
 class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
@@ -56,49 +55,52 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
     });
     try {
       final tickets = await _ticketService.listTickets();
-      final activeTickets =
-          tickets.where((t) => t.status != 'closed').toList();
+      final activeTickets = tickets.where((t) => t.status != 'closed').toList();
       final userId = _currentUser?.id;
       final notifications = <_NotificationItem>[];
 
       // Load audit logs + messages for all active tickets in parallel
-      await Future.wait(activeTickets.map((ticket) async {
-        try {
-          final logs = await _ticketService.getAuditLog(ticket.id);
-          final messages = await _ticketService.getMessages(ticket.id);
+      await Future.wait(
+        activeTickets.map((ticket) async {
+          try {
+            final logs = await _ticketService.getAuditLog(ticket.id);
+            final messages = await _ticketService.getMessages(ticket.id);
 
-          // Status updates performed by the manager (not the current tenant)
-          for (final log in logs) {
-            if (log.actorId != userId && log.toStatus != 'opened') {
-              notifications.add(_NotificationItem(
-                ticketId: ticket.id,
-                ticketTitle: ticket.title,
-                body:
-                    'Status updated to ${_statusLabel(log.toStatus)}',
-                timestamp: log.createdAt,
-              ));
+            // Status updates performed by the manager (not the current tenant)
+            for (final log in logs) {
+              if (log.actorId != userId && log.toStatus != 'opened') {
+                notifications.add(
+                  _NotificationItem(
+                    ticketId: ticket.id,
+                    ticketTitle: ticket.title,
+                    body: 'Status updated to ${_statusLabel(log.toStatus)}',
+                    timestamp: log.createdAt,
+                  ),
+                );
+              }
             }
-          }
 
-          // Messages sent by manager (not by the current tenant)
-          for (final msg in messages) {
-            if (msg.senderId != userId) {
-              notifications.add(_NotificationItem(
-                ticketId: ticket.id,
-                ticketTitle: ticket.title,
-                senderName: msg.senderName,
-                body: msg.content,
-                timestamp: msg.createdAt,
-              ));
+            // Messages sent by manager (not by the current tenant)
+            for (final msg in messages) {
+              if (msg.senderId != userId) {
+                notifications.add(
+                  _NotificationItem(
+                    ticketId: ticket.id,
+                    ticketTitle: ticket.title,
+                    senderName: msg.senderName,
+                    body: msg.content,
+                    timestamp: msg.createdAt,
+                  ),
+                );
+              }
             }
+          } catch (_) {
+            // Skip if details for this ticket fail to load
           }
-        } catch (_) {
-          // Skip if details for this ticket fail to load
-        }
-      }));
+        }),
+      );
 
-      notifications
-          .sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
       setState(() {
         _tickets = tickets;
@@ -164,6 +166,7 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
     }
   }
 
+  // ignore: unused_element
   String _shortId(Ticket t) {
     final raw = t.id.replaceAll('-', '');
     return '#${raw.substring(0, raw.length >= 4 ? 4 : raw.length).toUpperCase()}';
@@ -180,22 +183,23 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(_error!,
-                                style:
-                                    const TextStyle(color: Colors.red)),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _loadData,
-                              child: const Text('Retry'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _error!,
+                          style: const TextStyle(color: Colors.red),
                         ),
-                      )
-                    : _buildContent(),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadData,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _buildContent(),
           ),
         ],
       ),
@@ -203,10 +207,10 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
   }
 
   Widget _buildContent() {
-    final resolvedTickets =
-        _tickets.where((t) => t.status == 'resolved').toList();
-    final activeTickets =
-        _tickets.where((t) => t.status != 'closed').toList();
+    final resolvedTickets = _tickets
+        .where((t) => t.status == 'resolved')
+        .toList();
+    final activeTickets = _tickets.where((t) => t.status != 'closed').toList();
 
     // Derive unit/property info from tickets for the subtitle
     String locationText = '';
@@ -240,10 +244,11 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
             RichText(
               text: TextSpan(
                 style: GoogleFonts.inter(
-                    fontSize: 13, color: const Color(0xFF64748B)),
+                  fontSize: 13,
+                  color: const Color(0xFF64748B),
+                ),
                 children: [
-                  const TextSpan(
-                      text: 'Welcome back, you are currently in '),
+                  const TextSpan(text: 'Welcome back, you are currently in '),
                   TextSpan(
                     text: locationText,
                     style: const TextStyle(fontWeight: FontWeight.w700),
@@ -263,15 +268,20 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
                 label: Text(
                   'New Ticket',
                   style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w600),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: _navy,
                   side: const BorderSide(color: Color(0xFFCBD5E1)),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -281,15 +291,20 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
                 label: Text(
                   'Contact Manager',
                   style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w600),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _navy,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   elevation: 0,
                 ),
               ),
@@ -305,10 +320,7 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
                 child: _buildConfirmationRequired(resolvedTickets),
               ),
               const SizedBox(width: 20),
-              Expanded(
-                flex: 2,
-                child: _buildNotifications(_notifications),
-              ),
+              Expanded(flex: 2, child: _buildNotifications(_notifications)),
             ],
           ),
           const SizedBox(height: 32),
@@ -329,9 +341,10 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -341,15 +354,19 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
             padding: const EdgeInsets.only(right: 20),
             child: Row(
               children: [
-                const Icon(Icons.warning_amber_rounded,
-                    color: Color(0xFFF59E0B), size: 20),
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Color(0xFFF59E0B),
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Confirmation Required (${tickets.length})',
                   style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: _navy),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: _navy,
+                  ),
                 ),
               ],
             ),
@@ -362,8 +379,9 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
                     child: Text(
                       'No confirmations needed',
                       style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: const Color(0xFF94A3B8)),
+                        fontSize: 14,
+                        color: const Color(0xFF94A3B8),
+                      ),
                     ),
                   )
                 : SingleChildScrollView(
@@ -400,11 +418,16 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
                 child: ticket.photoUrl != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network(ticket.photoUrl!,
-                            fit: BoxFit.cover),
+                        child: Image.network(
+                          ticket.photoUrl!,
+                          fit: BoxFit.cover,
+                        ),
                       )
-                    : const Icon(Icons.image_outlined,
-                        color: Color(0xFF94A3B8), size: 24),
+                    : const Icon(
+                        Icons.image_outlined,
+                        color: Color(0xFF94A3B8),
+                        size: 24,
+                      ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -435,30 +458,36 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
                     Text(
                       ticket.title,
                       style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: _navy),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: _navy,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.access_time,
-                            size: 13, color: Color(0xFF64748B)),
+                        const Icon(
+                          Icons.access_time,
+                          size: 13,
+                          color: Color(0xFF64748B),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'Reported ',
                           style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: const Color(0xFF64748B)),
+                            fontSize: 12,
+                            color: const Color(0xFF64748B),
+                          ),
                         ),
                         Text(
                           _timeAgo(ticket.createdAt),
                           style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: _navy),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: _navy,
+                          ),
                         ),
                       ],
                     ),
@@ -467,20 +496,24 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
               ),
               const SizedBox(width: 12),
               TextButton(
-                onPressed: () =>
-                    context.go('/tickets/${ticket.id}'),
+                onPressed: () => context.go('/tickets/${ticket.id}'),
                 style: TextButton.styleFrom(
                   backgroundColor: const Color(0xFFF1F5F9),
                   foregroundColor: _navy,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6)),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
                 child: Text(
                   'View Details',
                   style: GoogleFonts.inter(
-                      fontSize: 12, fontWeight: FontWeight.w600),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -501,9 +534,10 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -514,9 +548,10 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
             child: Text(
               'Notifications',
               style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: _navy),
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: _navy,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -524,16 +559,21 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
             height: 260,
             child: items.isEmpty
                 ? Center(
-                    child: Text('No notifications',
-                        style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: const Color(0xFF94A3B8))),
+                    child: Text(
+                      'No notifications',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
                   )
                 : SingleChildScrollView(
                     child: Padding(
                       padding: const EdgeInsets.only(right: 20),
                       child: Column(
-                        children: items.map((n) => _buildNotificationItem(n)).toList(),
+                        children: items
+                            .map((n) => _buildNotificationItem(n))
+                            .toList(),
                       ),
                     ),
                   ),
@@ -566,32 +606,35 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  DateFormat('MMM d, h:mm a')
-                      .format(item.timestamp),
+                  DateFormat('MMM d, h:mm a').format(item.timestamp),
                   style: GoogleFonts.inter(
-                      fontSize: 11,
-                      color: const Color(0xFF94A3B8)),
+                    fontSize: 11,
+                    color: const Color(0xFF94A3B8),
+                  ),
                 ),
                 const SizedBox(height: 2),
                 RichText(
                   text: TextSpan(
                     style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: const Color(0xFF64748B)),
+                      fontSize: 12,
+                      color: const Color(0xFF64748B),
+                    ),
                     children: [
                       TextSpan(
                         text: item.ticketTitle,
                         style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1E293B)),
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1E293B),
+                        ),
                       ),
                       if (item.senderName.isNotEmpty) ...[
                         const TextSpan(text: '\n'),
                         TextSpan(
                           text: item.senderName,
                           style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1E293B)),
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E293B),
+                          ),
                         ),
                         const TextSpan(text: ': '),
                       ] else
@@ -617,7 +660,10 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
         Text(
           'Your Active Tickets',
           style: GoogleFonts.inter(
-              fontSize: 20, fontWeight: FontWeight.w700, color: _navy),
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: _navy,
+          ),
         ),
         const SizedBox(height: 16),
         Container(
@@ -626,9 +672,10 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2))
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
             ],
           ),
           child: Column(
@@ -636,30 +683,22 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
               // Header row
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 12),
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 decoration: const BoxDecoration(
                   border: Border(
-                      bottom: BorderSide(
-                          color: Color(0xFFF1F5F9), width: 1)),
-                  borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(12)),
+                    bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1),
+                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                 ),
                 child: Row(
                   children: [
-                    Expanded(
-                        flex: 3,
-                        child: _headerCell('Title')),
-                    Expanded(
-                        flex: 2,
-                        child: _headerCell('Category')),
-                    Expanded(
-                        flex: 2, child: _headerCell('Status')),
-                    Expanded(
-                        flex: 2,
-                        child: _headerCell('Action Required')),
-                    Expanded(
-                        flex: 2,
-                        child: _headerCell('Actions')),
+                    Expanded(flex: 3, child: _headerCell('Title')),
+                    Expanded(flex: 2, child: _headerCell('Category')),
+                    Expanded(flex: 2, child: _headerCell('Status')),
+                    Expanded(flex: 2, child: _headerCell('Action Required')),
+                    Expanded(flex: 2, child: _headerCell('Actions')),
                   ],
                 ),
               ),
@@ -667,10 +706,13 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 32),
                   child: Center(
-                    child: Text('No active tickets',
-                        style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: const Color(0xFF94A3B8))),
+                    child: Text(
+                      'No active tickets',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
                   ),
                 )
               else
@@ -686,9 +728,10 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
     return Text(
       label,
       style: GoogleFonts.inter(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: const Color(0xFF64748B)),
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF64748B),
+      ),
     );
   }
 
@@ -698,12 +741,11 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
     return InkWell(
       onTap: () => context.go('/tickets/${ticket.id}'),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: const BoxDecoration(
           border: Border(
-              bottom:
-                  BorderSide(color: Color(0xFFF8FAFC), width: 1)),
+            bottom: BorderSide(color: Color(0xFFF8FAFC), width: 1),
+          ),
         ),
         child: Row(
           children: [
@@ -715,17 +757,19 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
                   Text(
                     ticket.title,
                     style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _navy),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _navy,
+                    ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
                   Text(
                     _timeAgo(ticket.createdAt).toUpperCase(),
                     style: GoogleFonts.inter(
-                        fontSize: 10,
-                        color: const Color(0xFF94A3B8)),
+                      fontSize: 10,
+                      color: const Color(0xFF94A3B8),
+                    ),
                   ),
                 ],
               ),
@@ -734,12 +778,16 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
               flex: 2,
               child: Row(
                 children: [
-                  Icon(_categoryIcon(ticket.category),
-                      size: 14, color: const Color(0xFF64748B)),
+                  Icon(
+                    _categoryIcon(ticket.category),
+                    size: 14,
+                    color: const Color(0xFF64748B),
+                  ),
                   const SizedBox(width: 6),
-                  Text(_categoryLabel(ticket.category),
-                      style: GoogleFonts.inter(
-                          fontSize: 13, color: _navy)),
+                  Text(
+                    _categoryLabel(ticket.category),
+                    style: GoogleFonts.inter(fontSize: 13, color: _navy),
+                  ),
                 ],
               ),
             ),
@@ -754,8 +802,11 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
             Expanded(
               flex: 2,
               child: needsConfirmation
-                  ? const Icon(Icons.warning_amber_rounded,
-                      color: Color(0xFFEF4444), size: 20)
+                  ? const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Color(0xFFEF4444),
+                      size: 20,
+                    )
                   : const SizedBox.shrink(),
             ),
             Expanded(
@@ -763,24 +814,26 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton(
-                  onPressed: () =>
-                      context.go('/tickets/${ticket.id}'),
+                  onPressed: () => context.go('/tickets/${ticket.id}'),
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFF1F5F9),
                     foregroundColor: _navy,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6)),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                     minimumSize: Size.zero,
-                    tapTargetSize:
-                        MaterialTapTargetSize.shrinkWrap,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   child: Text(
                     'View Details',
                     style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -793,37 +846,28 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
 
   Widget _buildStatusBadge(String status) {
     final map = <String, List<dynamic>>{
-      'opened': [
-        const Color(0xFFDCFCE7),
-        const Color(0xFF166534),
-        'Opened'
-      ],
+      'opened': [const Color(0xFFDCFCE7), const Color(0xFF166534), 'Opened'],
       'acknowledged': [
         const Color(0xFFFEF3C7),
         const Color(0xFF92400E),
-        'Acknowledged'
+        'Acknowledged',
       ],
       'in_progress': [
         const Color(0xFFDBEAFE),
         const Color(0xFF1D4ED8),
-        'In Progress'
+        'In Progress',
       ],
       'resolved': [
         const Color(0xFFF3E8FF),
         const Color(0xFF6B21A8),
-        'Resolved'
+        'Resolved',
       ],
-      'closed': [
-        const Color(0xFFF1F5F9),
-        const Color(0xFF475569),
-        'Closed'
-      ],
+      'closed': [const Color(0xFFF1F5F9), const Color(0xFF475569), 'Closed'],
     };
     final entry =
         map[status] ?? [const Color(0xFFF1F5F9), Colors.black54, status];
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: entry[0] as Color,
         borderRadius: BorderRadius.circular(5),

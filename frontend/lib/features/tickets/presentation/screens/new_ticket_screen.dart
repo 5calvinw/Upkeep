@@ -32,11 +32,12 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
   List<Ticket> _recentTickets = [];
   bool _loadingRecent = true;
 
-  static const Color _navy = Color(0xFF283149);
+  static const Color _navy = Color(0xFF1E293B);
   static const Color _bgGray = Color(0xFFF8FAFC);
   static const Color _blue = Color(0xFF2563EB);
   static const Color _red = Color(0xFFD00000);
-  static const Color _inputBorder = Color(0x80283149);
+  static const Color _inputBorder = Color(0xFFCBD5E1);
+  static const double _contentWidth = 920;
 
   @override
   void initState() {
@@ -126,34 +127,34 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
           const SideNav(activeRoute: 'dashboard', role: 'tenant'),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(32, 40, 32, 32),
+              padding: const EdgeInsets.fromLTRB(40, 40, 40, 48),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ── Page title ──
                   SizedBox(
-                    width: 733,
+                    width: _contentWidth,
                     child: Text(
                       'Create a New Ticket',
                       style: GoogleFonts.inter(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: _navy,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 6),
                   SizedBox(
-                    width: 733,
+                    width: _contentWidth,
                     child: Text(
                       'Make sure that it\'s a new problem! Check the "Tickets" tab to see if a identical ticket exists.',
                       style: GoogleFonts.dmSans(
-                        fontSize: 12,
-                        color: Colors.black,
+                        fontSize: 13,
+                        color: const Color(0xFF64748B),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
                   // ── Form card ──
                   _buildFormCard(),
@@ -162,18 +163,18 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
 
                   // ── Recent Tickets & Stats ──
                   SizedBox(
-                    width: 733,
+                    width: _contentWidth,
                     child: Text(
                       'Recent Tickets & Stats',
                       style: GoogleFonts.inter(
-                        fontSize: 24,
+                        fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: Colors.black,
+                        color: _navy,
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  SizedBox(width: 733, child: _buildStatCards()),
+                  SizedBox(width: _contentWidth, child: _buildStatCards()),
                   const SizedBox(height: 16),
                   _buildRecentTicketsTable(),
                 ],
@@ -189,16 +190,16 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
 
   Widget _buildFormCard() {
     return Container(
-      width: 733,
-      padding: const EdgeInsets.all(16),
+      width: _contentWidth,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x40000000),
-            blurRadius: 4,
-            offset: Offset(0, 4),
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -252,7 +253,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black,
+                          color: _navy,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -388,8 +389,8 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                 const Spacer(),
                 // Submit button
                 SizedBox(
-                  width: 125,
-                  height: 35,
+                  width: 132,
+                  height: 40,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _handleSubmit,
                     style: ElevatedButton.styleFrom(
@@ -397,7 +398,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(5),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     child: _isLoading
@@ -447,16 +448,16 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
 
   Widget _buildStatCard(String label, String value, String? sub) {
     return Container(
-      width: 180,
-      padding: const EdgeInsets.all(12),
+      width: 200,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x40000000),
-            blurRadius: 4,
-            offset: Offset(0, 4),
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -469,7 +470,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Colors.black,
+              color: _navy,
             ),
           ),
           Row(
@@ -481,7 +482,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: Colors.black,
+                  color: _navy,
                 ),
               ),
               if (sub != null) ...[
@@ -506,15 +507,15 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
 
   Widget _buildRecentTicketsTable() {
     return Container(
-      width: 733,
+      width: _contentWidth,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x40000000),
-            blurRadius: 4,
-            offset: Offset(0, 1),
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -524,8 +525,11 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: const BoxDecoration(
-              color: Color(0xFFF2F4F6),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+              color: Color(0xFFF8FAFC),
+              border: Border(
+                bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1),
+              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Row(
               children: [
@@ -610,7 +614,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: const Color(0xFFD9D9D9),
+            color: const Color(0xFFF1F5F9),
             width:
                 index <
                     (_recentTickets.length > 5 ? 4 : _recentTickets.length - 1)
@@ -664,8 +668,8 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
               child: Container(
                 height: 30,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE6E8EA),
-                  borderRadius: BorderRadius.circular(4),
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 alignment: Alignment.center,
                 child: Text(
@@ -673,7 +677,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF191C1E),
+                    color: _navy,
                   ),
                 ),
               ),
@@ -714,7 +718,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: entry[0] as Color,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(5),
         ),
         child: Text(
           entry[2] as String,
@@ -765,7 +769,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: _inputBorder),
       ),
       child: selectedCount == 0
@@ -958,15 +962,15 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
       hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.black38),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: _inputBorder),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: _inputBorder),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: _blue),
       ),
       errorBorder: OutlineInputBorder(

@@ -106,13 +106,20 @@ class _ManagerActiveTicketsScreenState
 
   IconData _categoryIcon(String c) {
     switch (c) {
-      case 'plumbing': return Icons.plumbing;
-      case 'electrical': return Icons.electrical_services;
-      case 'hvac': return Icons.air;
-      case 'appliance': return Icons.kitchen;
-      case 'structural': return Icons.foundation;
-      case 'pest_control': return Icons.bug_report;
-      default: return Icons.build_outlined;
+      case 'plumbing':
+        return Icons.plumbing;
+      case 'electrical':
+        return Icons.electrical_services;
+      case 'hvac':
+        return Icons.air;
+      case 'appliance':
+        return Icons.kitchen;
+      case 'structural':
+        return Icons.foundation;
+      case 'pest_control':
+        return Icons.bug_report;
+      default:
+        return Icons.build_outlined;
     }
   }
 
@@ -128,21 +135,23 @@ class _ManagerActiveTicketsScreenState
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(_error!,
-                                style: const TextStyle(color: Colors.red)),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _loadTickets,
-                              child: const Text('Retry'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _error!,
+                          style: const TextStyle(color: Colors.red),
                         ),
-                      )
-                    : _buildContent(),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadTickets,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _buildContent(),
           ),
         ],
       ),
@@ -162,7 +171,9 @@ class _ManagerActiveTicketsScreenState
           Text(
             "$managerName's Properties",
             style: GoogleFonts.inter(
-                fontSize: 12, color: const Color(0xFF94A3B8)),
+              fontSize: 12,
+              color: const Color(0xFF94A3B8),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -206,19 +217,23 @@ class _ManagerActiveTicketsScreenState
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 6,
-              offset: const Offset(0, 2))
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Row(
         children: [
           // Status filter
-          Text('Filter:',
-              style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF64748B))),
+          Text(
+            'Filter:',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF64748B),
+            ),
+          ),
           const SizedBox(width: 10),
           _buildDropdown(
             value: _filterStatus,
@@ -227,11 +242,14 @@ class _ManagerActiveTicketsScreenState
           ),
           const SizedBox(width: 24),
           // Sort by
-          Text('Sort by:',
-              style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF64748B))),
+          Text(
+            'Sort by:',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF64748B),
+            ),
+          ),
           const SizedBox(width: 10),
           _buildDropdown(
             value: _sortBy,
@@ -244,8 +262,7 @@ class _ManagerActiveTicketsScreenState
             borderRadius: BorderRadius.circular(6),
             onTap: () => setState(() => _sortAsc = !_sortAsc),
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(6),
@@ -261,9 +278,10 @@ class _ManagerActiveTicketsScreenState
                   Text(
                     _sortAsc ? 'Asc' : 'Desc',
                     style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _navy),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _navy,
+                    ),
                   ),
                 ],
               ),
@@ -273,7 +291,9 @@ class _ManagerActiveTicketsScreenState
           Text(
             '${_sortedTickets.length} ticket${_sortedTickets.length == 1 ? '' : 's'}',
             style: GoogleFonts.inter(
-                fontSize: 13, color: const Color(0xFF94A3B8)),
+              fontSize: 13,
+              color: const Color(0xFF94A3B8),
+            ),
           ),
         ],
       ),
@@ -290,15 +310,18 @@ class _ManagerActiveTicketsScreenState
       onSelected: onChanged,
       offset: const Offset(0, 36),
       itemBuilder: (context) => items.entries
-          .map((e) => PopupMenuItem<String>(
-                value: e.key,
-                child: Text(e.value,
-                    style: GoogleFonts.inter(fontSize: 13, color: _navy)),
-              ))
+          .map(
+            (e) => PopupMenuItem<String>(
+              value: e.key,
+              child: Text(
+                e.value,
+                style: GoogleFonts.inter(fontSize: 13, color: _navy),
+              ),
+            ),
+          )
           .toList(),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(6),
@@ -325,22 +348,22 @@ class _ManagerActiveTicketsScreenState
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
         children: [
           // Header
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: const BoxDecoration(
               border: Border(
-                  bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1)),
-              borderRadius:
-                  BorderRadius.vertical(top: Radius.circular(12)),
+                bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1),
+              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Row(
               children: [
@@ -357,10 +380,13 @@ class _ManagerActiveTicketsScreenState
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 32),
               child: Center(
-                child: Text('No active tickets',
-                    style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: const Color(0xFF94A3B8))),
+                child: Text(
+                  'No active tickets',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: const Color(0xFF94A3B8),
+                  ),
+                ),
               ),
             )
           else
@@ -371,22 +397,23 @@ class _ManagerActiveTicketsScreenState
   }
 
   Widget _headerCell(String label) => Text(
-        label,
-        style: GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF64748B)),
-      );
+    label,
+    style: GoogleFonts.inter(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      color: const Color(0xFF64748B),
+    ),
+  );
 
   Widget _buildRow(Ticket ticket) {
     return InkWell(
       onTap: () => context.go('/manager/tickets/${ticket.id}'),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: const BoxDecoration(
           border: Border(
-              bottom: BorderSide(color: Color(0xFFF8FAFC), width: 1)),
+            bottom: BorderSide(color: Color(0xFFF8FAFC), width: 1),
+          ),
         ),
         child: Row(
           children: [
@@ -399,17 +426,19 @@ class _ManagerActiveTicketsScreenState
                   Text(
                     ticket.title,
                     style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _navy),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _navy,
+                    ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
                   Text(
                     _timeAgo(ticket.createdAt).toUpperCase(),
                     style: GoogleFonts.inter(
-                        fontSize: 10,
-                        color: const Color(0xFF94A3B8)),
+                      fontSize: 10,
+                      color: const Color(0xFF94A3B8),
+                    ),
                   ),
                 ],
               ),
@@ -436,12 +465,16 @@ class _ManagerActiveTicketsScreenState
               flex: 2,
               child: Row(
                 children: [
-                  Icon(_categoryIcon(ticket.category),
-                      size: 14, color: const Color(0xFF64748B)),
+                  Icon(
+                    _categoryIcon(ticket.category),
+                    size: 14,
+                    color: const Color(0xFF64748B),
+                  ),
                   const SizedBox(width: 6),
-                  Text(_categoryLabel(ticket.category),
-                      style:
-                          GoogleFonts.inter(fontSize: 13, color: _navy)),
+                  Text(
+                    _categoryLabel(ticket.category),
+                    style: GoogleFonts.inter(fontSize: 13, color: _navy),
+                  ),
                 ],
               ),
             ),
@@ -459,21 +492,27 @@ class _ManagerActiveTicketsScreenState
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton(
-                  onPressed: () =>
-                      context.go('/manager/tickets/${ticket.id}'),
+                  onPressed: () => context.go('/manager/tickets/${ticket.id}'),
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFF1F5F9),
                     foregroundColor: _navy,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6)),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: Text('View Details',
-                      style: GoogleFonts.inter(
-                          fontSize: 12, fontWeight: FontWeight.w600)),
+                  child: Text(
+                    'View Details',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -486,12 +525,25 @@ class _ManagerActiveTicketsScreenState
   Widget _buildStatusBadge(String status) {
     final map = <String, List<dynamic>>{
       'opened': [const Color(0xFFDCFCE7), const Color(0xFF166534), 'Opened'],
-      'acknowledged': [const Color(0xFFFEF3C7), const Color(0xFF92400E), 'Acknowledged'],
-      'in_progress': [const Color(0xFFDBEAFE), const Color(0xFF1D4ED8), 'In Progress'],
-      'resolved': [const Color(0xFFF3E8FF), const Color(0xFF6B21A8), 'Resolved'],
+      'acknowledged': [
+        const Color(0xFFFEF3C7),
+        const Color(0xFF92400E),
+        'Acknowledged',
+      ],
+      'in_progress': [
+        const Color(0xFFDBEAFE),
+        const Color(0xFF1D4ED8),
+        'In Progress',
+      ],
+      'resolved': [
+        const Color(0xFFF3E8FF),
+        const Color(0xFF6B21A8),
+        'Resolved',
+      ],
       'closed': [const Color(0xFFF1F5F9), const Color(0xFF475569), 'Closed'],
     };
-    final entry = map[status] ?? [const Color(0xFFF1F5F9), Colors.black54, status];
+    final entry =
+        map[status] ?? [const Color(0xFFF1F5F9), Colors.black54, status];
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(

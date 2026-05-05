@@ -35,7 +35,10 @@ class AuthService {
       // Fetch and cache the user immediately after storing the token.
       final userResp = await http.get(
         Uri.parse('$_baseUrl/users/me'),
-        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
       );
       if (userResp.statusCode == 200) {
         final user = UserInfo.fromJson(jsonDecode(userResp.body));

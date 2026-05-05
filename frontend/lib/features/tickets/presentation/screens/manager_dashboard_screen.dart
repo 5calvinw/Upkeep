@@ -27,8 +27,7 @@ class ManagerDashboardScreen extends StatefulWidget {
   const ManagerDashboardScreen({super.key});
 
   @override
-  State<ManagerDashboardScreen> createState() =>
-      _ManagerDashboardScreenState();
+  State<ManagerDashboardScreen> createState() => _ManagerDashboardScreenState();
 }
 
 class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
@@ -55,43 +54,48 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     });
     try {
       final tickets = await _ticketService.listTickets();
-      final activeTickets =
-          tickets.where((t) => t.status != 'closed').toList();
+      final activeTickets = tickets.where((t) => t.status != 'closed').toList();
       final userId = _currentUser?.id;
       final notifications = <_NotificationItem>[];
 
-      await Future.wait(activeTickets.map((ticket) async {
-        try {
-          final logs = await _ticketService.getAuditLog(ticket.id);
-          final messages = await _ticketService.getMessages(ticket.id);
+      await Future.wait(
+        activeTickets.map((ticket) async {
+          try {
+            final logs = await _ticketService.getAuditLog(ticket.id);
+            final messages = await _ticketService.getMessages(ticket.id);
 
-          // Status updates not performed by this manager
-          for (final log in logs) {
-            if (log.actorId != userId && log.toStatus != 'opened') {
-              notifications.add(_NotificationItem(
-                ticketId: ticket.id,
-                ticketTitle: ticket.title,
-                senderName: log.actorName,
-                body: 'Status updated to ${_statusLabel(log.toStatus)}',
-                timestamp: log.createdAt,
-              ));
+            // Status updates not performed by this manager
+            for (final log in logs) {
+              if (log.actorId != userId && log.toStatus != 'opened') {
+                notifications.add(
+                  _NotificationItem(
+                    ticketId: ticket.id,
+                    ticketTitle: ticket.title,
+                    senderName: log.actorName,
+                    body: 'Status updated to ${_statusLabel(log.toStatus)}',
+                    timestamp: log.createdAt,
+                  ),
+                );
+              }
             }
-          }
 
-          // Messages sent by tenants (not by this manager)
-          for (final msg in messages) {
-            if (msg.senderId != userId) {
-              notifications.add(_NotificationItem(
-                ticketId: ticket.id,
-                ticketTitle: ticket.title,
-                senderName: msg.senderName,
-                body: msg.content,
-                timestamp: msg.createdAt,
-              ));
+            // Messages sent by tenants (not by this manager)
+            for (final msg in messages) {
+              if (msg.senderId != userId) {
+                notifications.add(
+                  _NotificationItem(
+                    ticketId: ticket.id,
+                    ticketTitle: ticket.title,
+                    senderName: msg.senderName,
+                    body: msg.content,
+                    timestamp: msg.createdAt,
+                  ),
+                );
+              }
             }
-          }
-        } catch (_) {}
-      }));
+          } catch (_) {}
+        }),
+      );
 
       notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
@@ -170,21 +174,23 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(_error!,
-                                style: const TextStyle(color: Colors.red)),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _loadTickets,
-                              child: const Text('Retry'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _error!,
+                          style: const TextStyle(color: Colors.red),
                         ),
-                      )
-                    : _buildContent(),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadTickets,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _buildContent(),
           ),
         ],
       ),
@@ -192,26 +198,30 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   }
 
   Widget _buildContent() {
-    final activeTickets =
-        _tickets.where((t) => t.status != 'closed').toList();
-    final criticalTickets =
-        _tickets.where((t) => t.urgency == 'urgent').toList();
-    final awaitingTickets =
-        _tickets.where((t) => t.status != 'closed' && t.status != 'resolved').toList();
-    final closedToday = _tickets
-        .where((t) =>
-            t.status == 'closed' &&
-            DateTime.now().difference(t.updatedAt).inHours < 24)
-        .length;
-    final actionRequired = _tickets
+    final activeTickets = _tickets.where((t) => t.status != 'closed').toList();
+    final criticalTickets = _tickets
+        .where((t) => t.urgency == 'urgent')
+        .toList();
+    final awaitingTickets = _tickets
         .where((t) => t.status != 'closed' && t.status != 'resolved')
-        .toList()
-      ..sort((a, b) {
-        final aUrgent = a.urgency == 'urgent' ? 0 : 1;
-        final bUrgent = b.urgency == 'urgent' ? 0 : 1;
-        if (aUrgent != bUrgent) return aUrgent.compareTo(bUrgent);
-        return b.createdAt.compareTo(a.createdAt);
-      });
+        .toList();
+    final closedToday = _tickets
+        .where(
+          (t) =>
+              t.status == 'closed' &&
+              DateTime.now().difference(t.updatedAt).inHours < 24,
+        )
+        .length;
+    final actionRequired =
+        _tickets
+            .where((t) => t.status != 'closed' && t.status != 'resolved')
+            .toList()
+          ..sort((a, b) {
+            final aUrgent = a.urgency == 'urgent' ? 0 : 1;
+            final bUrgent = b.urgency == 'urgent' ? 0 : 1;
+            if (aUrgent != bUrgent) return aUrgent.compareTo(bUrgent);
+            return b.createdAt.compareTo(a.createdAt);
+          });
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -221,7 +231,9 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
           Text(
             'Dashboard',
             style: GoogleFonts.inter(
-                fontSize: 12, color: const Color(0xFF94A3B8)),
+              fontSize: 12,
+              color: const Color(0xFF94A3B8),
+            ),
           ),
           const SizedBox(height: 8),
           // Header
@@ -236,8 +248,11 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                 ),
               ),
               const SizedBox(width: 6),
-              const Icon(Icons.keyboard_arrow_down,
-                  size: 28, color: Color(0xFF64748B)),
+              const Icon(
+                Icons.keyboard_arrow_down,
+                size: 28,
+                color: Color(0xFF64748B),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -298,15 +313,9 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                flex: 3,
-                child: _buildActionRequired(actionRequired),
-              ),
+              Expanded(flex: 3, child: _buildActionRequired(actionRequired)),
               const SizedBox(width: 20),
-              Expanded(
-                flex: 2,
-                child: _buildNotifications(_notifications),
-              ),
+              Expanded(flex: 2, child: _buildNotifications(_notifications)),
             ],
           ),
         ],
@@ -331,9 +340,10 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         border: Border(left: BorderSide(color: accentColor, width: 4)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -370,7 +380,9 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
           Text(
             subtext,
             style: GoogleFonts.inter(
-                fontSize: 12, color: const Color(0xFF64748B)),
+              fontSize: 12,
+              color: const Color(0xFF64748B),
+            ),
           ),
         ],
       ),
@@ -385,9 +397,10 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -397,15 +410,19 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             padding: const EdgeInsets.only(right: 20),
             child: Row(
               children: [
-                const Icon(Icons.warning_amber_rounded,
-                    color: Color(0xFFF59E0B), size: 20),
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Color(0xFFF59E0B),
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Action Required (${tickets.length})',
                   style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: _navy),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: _navy,
+                  ),
                 ),
               ],
             ),
@@ -415,16 +432,21 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             height: 260,
             child: tickets.isEmpty
                 ? Center(
-                    child: Text('No actions required',
-                        style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: const Color(0xFF94A3B8))),
+                    child: Text(
+                      'No actions required',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
                   )
                 : SingleChildScrollView(
                     child: Padding(
                       padding: const EdgeInsets.only(right: 20),
                       child: Column(
-                        children: tickets.map((t) => _buildActionItem(t)).toList(),
+                        children: tickets
+                            .map((t) => _buildActionItem(t))
+                            .toList(),
                       ),
                     ),
                   ),
@@ -453,11 +475,16 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                 child: ticket.photoUrl != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network(ticket.photoUrl!,
-                            fit: BoxFit.cover),
+                        child: Image.network(
+                          ticket.photoUrl!,
+                          fit: BoxFit.cover,
+                        ),
                       )
-                    : const Icon(Icons.image_outlined,
-                        color: Color(0xFF94A3B8), size: 24),
+                    : const Icon(
+                        Icons.image_outlined,
+                        color: Color(0xFF94A3B8),
+                        size: 24,
+                      ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -470,14 +497,18 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                           Text(
                             'URGENT',
                             style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFFEF4444)),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFFEF4444),
+                            ),
                           ),
-                          Text(' • ',
-                              style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  color: const Color(0xFFEF4444))),
+                          Text(
+                            ' • ',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: const Color(0xFFEF4444),
+                            ),
+                          ),
                         ],
                         Flexible(
                           child: Text(
@@ -503,42 +534,52 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                     Text(
                       ticket.title,
                       style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: _navy),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: _navy,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.person_outline,
-                            size: 13, color: Color(0xFF64748B)),
+                        const Icon(
+                          Icons.person_outline,
+                          size: 13,
+                          color: Color(0xFF64748B),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           ticket.tenantName.isNotEmpty
                               ? ticket.tenantName
                               : 'Unknown',
                           style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: const Color(0xFF64748B)),
+                            fontSize: 12,
+                            color: const Color(0xFF64748B),
+                          ),
                         ),
                         const SizedBox(width: 12),
-                        const Icon(Icons.access_time,
-                            size: 13, color: Color(0xFF64748B)),
+                        const Icon(
+                          Icons.access_time,
+                          size: 13,
+                          color: Color(0xFF64748B),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'Reported ',
                           style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: const Color(0xFF64748B)),
+                            fontSize: 12,
+                            color: const Color(0xFF64748B),
+                          ),
                         ),
                         Text(
                           _timeAgo(ticket.createdAt),
                           style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: _navy),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: _navy,
+                          ),
                         ),
                       ],
                     ),
@@ -547,20 +588,24 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
               ),
               const SizedBox(width: 12),
               TextButton(
-                onPressed: () =>
-                    context.go('/manager/tickets/${ticket.id}'),
+                onPressed: () => context.go('/manager/tickets/${ticket.id}'),
                 style: TextButton.styleFrom(
                   backgroundColor: const Color(0xFFF1F5F9),
                   foregroundColor: _navy,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6)),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
                 child: Text(
                   'View Details',
                   style: GoogleFonts.inter(
-                      fontSize: 12, fontWeight: FontWeight.w600),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -579,9 +624,10 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -592,9 +638,10 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             child: Text(
               'Notifications',
               style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: _navy),
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: _navy,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -602,16 +649,21 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             height: 260,
             child: items.isEmpty
                 ? Center(
-                    child: Text('No notifications',
-                        style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: const Color(0xFF94A3B8))),
+                    child: Text(
+                      'No notifications',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
                   )
                 : SingleChildScrollView(
                     child: Padding(
                       padding: const EdgeInsets.only(right: 20),
                       child: Column(
-                        children: items.map((n) => _buildNotificationItem(n)).toList(),
+                        children: items
+                            .map((n) => _buildNotificationItem(n))
+                            .toList(),
                       ),
                     ),
                   ),
@@ -646,27 +698,33 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                 Text(
                   DateFormat('MMM d, h:mm a').format(item.timestamp),
                   style: GoogleFonts.inter(
-                      fontSize: 11, color: const Color(0xFF94A3B8)),
+                    fontSize: 11,
+                    color: const Color(0xFF94A3B8),
+                  ),
                 ),
                 const SizedBox(height: 2),
                 RichText(
                   text: TextSpan(
                     style: GoogleFonts.inter(
-                        fontSize: 12, color: const Color(0xFF64748B)),
+                      fontSize: 12,
+                      color: const Color(0xFF64748B),
+                    ),
                     children: [
                       TextSpan(
                         text: item.ticketTitle,
                         style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1E293B)),
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1E293B),
+                        ),
                       ),
                       if (item.senderName.isNotEmpty) ...[
                         const TextSpan(text: '\n'),
                         TextSpan(
                           text: item.senderName,
                           style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1E293B)),
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E293B),
+                          ),
                         ),
                         const TextSpan(text: ': '),
                       ] else
@@ -683,6 +741,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildActiveTicketsTable(List<Ticket> tickets) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -690,7 +749,10 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         Text(
           'Active Tickets',
           style: GoogleFonts.inter(
-              fontSize: 20, fontWeight: FontWeight.w700, color: _navy),
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: _navy,
+          ),
         ),
         const SizedBox(height: 16),
         Container(
@@ -699,9 +761,10 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2))
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
             ],
           ),
           child: Column(
@@ -709,32 +772,23 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
               // Table header
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 12),
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 decoration: const BoxDecoration(
                   border: Border(
-                      bottom: BorderSide(
-                          color: Color(0xFFF1F5F9), width: 1)),
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(12)),
+                    bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1),
+                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                 ),
                 child: Row(
                   children: [
-                    Expanded(
-                        flex: 2,
-                        child: _headerCell('Title')),
-                    Expanded(
-                        flex: 1, child: _headerCell('Unit')),
-                    Expanded(
-                        flex: 2,
-                        child: _headerCell('Property')),
-                    Expanded(
-                        flex: 2,
-                        child: _headerCell('Category')),
-                    Expanded(
-                        flex: 2, child: _headerCell('Status')),
-                    Expanded(
-                        flex: 2,
-                        child: _headerCell('Actions')),
+                    Expanded(flex: 2, child: _headerCell('Title')),
+                    Expanded(flex: 1, child: _headerCell('Unit')),
+                    Expanded(flex: 2, child: _headerCell('Property')),
+                    Expanded(flex: 2, child: _headerCell('Category')),
+                    Expanded(flex: 2, child: _headerCell('Status')),
+                    Expanded(flex: 2, child: _headerCell('Actions')),
                   ],
                 ),
               ),
@@ -742,10 +796,13 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 32),
                   child: Center(
-                    child: Text('No active tickets',
-                        style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: const Color(0xFF94A3B8))),
+                    child: Text(
+                      'No active tickets',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
                   ),
                 )
               else
@@ -761,9 +818,10 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     return Text(
       label,
       style: GoogleFonts.inter(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: const Color(0xFF64748B)),
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF64748B),
+      ),
     );
   }
 
@@ -771,12 +829,11 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     return InkWell(
       onTap: () => context.go('/manager/tickets/${ticket.id}'),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: const BoxDecoration(
           border: Border(
-              bottom:
-                  BorderSide(color: Color(0xFFF8FAFC), width: 1)),
+            bottom: BorderSide(color: Color(0xFFF8FAFC), width: 1),
+          ),
         ),
         child: Row(
           children: [
@@ -788,17 +845,19 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                   Text(
                     ticket.title,
                     style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _navy),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _navy,
+                    ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
                   Text(
                     _timeAgo(ticket.createdAt).toUpperCase(),
                     style: GoogleFonts.inter(
-                        fontSize: 10,
-                        color: const Color(0xFF94A3B8)),
+                      fontSize: 10,
+                      color: const Color(0xFF94A3B8),
+                    ),
                   ),
                 ],
               ),
@@ -806,21 +865,15 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             Expanded(
               flex: 1,
               child: Text(
-                ticket.unitNumber.isNotEmpty
-                    ? ticket.unitNumber
-                    : '—',
-                style: GoogleFonts.inter(
-                    fontSize: 13, color: _navy),
+                ticket.unitNumber.isNotEmpty ? ticket.unitNumber : '—',
+                style: GoogleFonts.inter(fontSize: 13, color: _navy),
               ),
             ),
             Expanded(
               flex: 2,
               child: Text(
-                ticket.propertyName.isNotEmpty
-                    ? ticket.propertyName
-                    : '—',
-                style: GoogleFonts.inter(
-                    fontSize: 13, color: _navy),
+                ticket.propertyName.isNotEmpty ? ticket.propertyName : '—',
+                style: GoogleFonts.inter(fontSize: 13, color: _navy),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -828,14 +881,15 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
               flex: 2,
               child: Row(
                 children: [
-                  Icon(_categoryIcon(ticket.category),
-                      size: 14,
-                      color: const Color(0xFF64748B)),
+                  Icon(
+                    _categoryIcon(ticket.category),
+                    size: 14,
+                    color: const Color(0xFF64748B),
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     _categoryLabel(ticket.category),
-                    style: GoogleFonts.inter(
-                        fontSize: 13, color: _navy),
+                    style: GoogleFonts.inter(fontSize: 13, color: _navy),
                   ),
                 ],
               ),
@@ -852,24 +906,26 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton(
-                  onPressed: () => context
-                      .go('/manager/tickets/${ticket.id}'),
+                  onPressed: () => context.go('/manager/tickets/${ticket.id}'),
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFF1F5F9),
                     foregroundColor: _navy,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6)),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                     minimumSize: Size.zero,
-                    tapTargetSize:
-                        MaterialTapTargetSize.shrinkWrap,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   child: Text(
                     'View Details',
                     style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -882,37 +938,28 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
 
   Widget _buildStatusBadge(String status) {
     final map = <String, List<dynamic>>{
-      'opened': [
-        const Color(0xFFDCFCE7),
-        const Color(0xFF166534),
-        'Opened'
-      ],
+      'opened': [const Color(0xFFDCFCE7), const Color(0xFF166534), 'Opened'],
       'acknowledged': [
         const Color(0xFFFEF3C7),
         const Color(0xFF92400E),
-        'Acknowledged'
+        'Acknowledged',
       ],
       'in_progress': [
         const Color(0xFFDBEAFE),
         const Color(0xFF1D4ED8),
-        'In Progress'
+        'In Progress',
       ],
       'resolved': [
         const Color(0xFFF3E8FF),
         const Color(0xFF6B21A8),
-        'Resolved'
+        'Resolved',
       ],
-      'closed': [
-        const Color(0xFFF1F5F9),
-        const Color(0xFF475569),
-        'Closed'
-      ],
+      'closed': [const Color(0xFFF1F5F9), const Color(0xFF475569), 'Closed'],
     };
     final entry =
         map[status] ?? [const Color(0xFFF1F5F9), Colors.black54, status];
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: entry[0] as Color,
         borderRadius: BorderRadius.circular(5),

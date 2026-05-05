@@ -20,11 +20,11 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-  static const Color _navy = Color(0xFF283149);
+  static const Color _navy = Color(0xFF1E293B);
   static const Color _blue = Color(0xFF2563EB);
   static const Color _linkBlue = Color(0xFF2D28C9);
   static const Color _red = Color(0xFFD00000);
-  static const Color _inputBorder = Color(0x80283149); // 50% opacity
+  static const Color _inputBorder = Color(0xFFCBD5E1);
 
   @override
   void dispose() {
@@ -45,7 +45,9 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (mounted) {
         final user = AuthService.currentUser.value;
-        context.go(user?.role == 'manager' ? '/manager/dashboard' : '/dashboard');
+        context.go(
+          user?.role == 'manager' ? '/manager/dashboard' : '/dashboard',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -67,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: _navy,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final isWide = constraints.maxWidth >= 800;
+          final isWide = constraints.maxWidth >= 960;
           return isWide ? _buildWideLayout() : _buildMobileLayout();
         },
       ),
@@ -111,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
       color: _navy,
       child: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(40),
           child: _buildCard(),
         ),
       ),
@@ -149,10 +151,17 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildCard() {
     return Container(
       width: 456,
-      padding: const EdgeInsets.all(40),
+      padding: const EdgeInsets.all(36),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1F1E293B),
+            blurRadius: 24,
+            offset: Offset(0, 12),
+          ),
+        ],
       ),
       child: Form(
         key: _formKey,
@@ -165,16 +174,13 @@ class _LoginScreenState extends State<LoginScreen> {
               style: GoogleFonts.inter(
                 fontSize: 32,
                 fontWeight: FontWeight.w700,
-                color: Colors.black,
+                color: _navy,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               'Please enter your details to sign in.',
-              style: GoogleFonts.dmSans(
-                fontSize: 12,
-                color: Colors.black54,
-              ),
+              style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black54),
             ),
             const SizedBox(height: 28),
             _buildFieldLabel('Username'),
@@ -216,14 +222,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     onChanged: (v) => setState(() => _rememberMe = v ?? false),
                     activeColor: _blue,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(3)),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Remember me',
-                  style: GoogleFonts.dmSans(fontSize: 12),
-                ),
+                Text('Remember me', style: GoogleFonts.dmSans(fontSize: 12)),
                 const Spacer(),
                 GestureDetector(
                   onTap: () {
@@ -231,10 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                   child: Text(
                     'Forgot Password?',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 12,
-                      color: _linkBlue,
-                    ),
+                    style: GoogleFonts.dmSans(fontSize: 12, color: _linkBlue),
                   ),
                 ),
               ],
@@ -242,7 +243,7 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
-              height: 40,
+              height: 44,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _handleLogin,
                 style: ElevatedButton.styleFrom(
@@ -250,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: _isLoading
@@ -291,25 +292,27 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              height: 40,
+              height: 44,
               child: OutlinedButton(
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Google login coming soon'),
-                    ),
+                    const SnackBar(content: Text('Google login coming soon')),
                   );
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: _inputBorder),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.g_mobiledata, size: 22, color: Colors.black87),
+                    const Icon(
+                      Icons.g_mobiledata,
+                      size: 22,
+                      color: Colors.black87,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Log in with Google',
@@ -356,10 +359,7 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
+          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
         ),
         const SizedBox(width: 2),
         Text(
@@ -392,22 +392,24 @@ class _LoginScreenState extends State<LoginScreen> {
         hintText: hint,
         hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.black38),
         suffixIcon: suffixIcon,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: _inputBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: _inputBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: _blue),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: _red),
         ),
         filled: true,

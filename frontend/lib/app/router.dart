@@ -18,7 +18,9 @@ final appRouter = GoRouter(
     final path = state.matchedLocation;
 
     // Public routes — always allow through.
-    if (path == '/login' || path.startsWith('/register') || path == '/unauthorized') {
+    if (path == '/login' ||
+        path.startsWith('/register') ||
+        path == '/unauthorized') {
       // If already authenticated, skip login/register.
       if (user != null && (path == '/login' || path.startsWith('/register'))) {
         return user.role == 'manager' ? '/manager/dashboard' : '/dashboard';
@@ -43,15 +45,11 @@ final appRouter = GoRouter(
     return null;
   },
   routes: [
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
+    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(
       path: '/register',
-      builder: (context, state) => RegisterScreen(
-        inviteToken: state.uri.queryParameters['token'],
-      ),
+      builder: (context, state) =>
+          RegisterScreen(inviteToken: state.uri.queryParameters['token']),
     ),
     GoRoute(
       path: '/unauthorized',

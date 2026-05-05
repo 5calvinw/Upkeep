@@ -40,7 +40,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   bool _isLoading = true;
   String? _error;
 
-  static const Color _navy = Color(0xFF283149);
+  static const Color _navy = Color(0xFF1E293B);
   static const Color _bgGray = Color(0xFFF8FAFC);
   static const double _detailPanelHeight = 593;
 
@@ -206,7 +206,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   Widget _buildContent() {
     final ticket = _ticket!;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.fromLTRB(40, 40, 40, 48),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -265,9 +265,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               child: Text(
                 ticket.title,
                 style: GoogleFonts.inter(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: _navy,
                 ),
               ),
             ),
@@ -293,15 +293,15 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   Widget _buildEditButton() {
     return Container(
-      height: 35,
+      height: 40,
       decoration: BoxDecoration(
-        color: const Color(0xFFE6E8EA),
-        borderRadius: BorderRadius.circular(5),
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(8),
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Edit ticket coming soon')),
@@ -331,15 +331,15 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   Widget _buildActionButton(Ticket ticket) {
     return Container(
-      height: 35,
+      height: 40,
       decoration: BoxDecoration(
         color: _navy,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(8),
           onTap: _advanceStatus,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -390,7 +390,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -416,7 +416,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFD5E3FC),
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -442,9 +442,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4)),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -456,7 +460,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             decoration: const BoxDecoration(
               color: _navy,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Text(
               'Property Details',
@@ -555,9 +559,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4)),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: SingleChildScrollView(
@@ -651,10 +659,14 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     return Container(
       height: _detailPanelHeight,
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F4F6),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4)),
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -665,10 +677,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             padding: const EdgeInsets.all(14),
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black12,
+                  color: Color(0xFFE2E8F0),
                   blurRadius: 1,
                   offset: Offset(0, 1),
                 ),
@@ -1031,9 +1043,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4)),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: SingleChildScrollView(

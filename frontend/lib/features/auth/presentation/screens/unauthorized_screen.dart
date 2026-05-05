@@ -6,7 +6,7 @@ import 'package:frontend/features/auth/data/auth_service.dart';
 class UnauthorizedScreen extends StatelessWidget {
   const UnauthorizedScreen({super.key});
 
-  static const Color _navy = Color(0xFF283149);
+  static const Color _navy = Color(0xFF1E293B);
 
   @override
   Widget build(BuildContext context) {
@@ -37,14 +37,19 @@ class UnauthorizedScreen extends StatelessWidget {
                 final user = await AuthService().getCachedUser();
                 if (context.mounted) {
                   context.go(
-                    user?.role == 'manager' ? '/manager/dashboard' : '/dashboard',
+                    user?.role == 'manager'
+                        ? '/manager/dashboard'
+                        : '/dashboard',
                   );
                 }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _navy,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 14,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),

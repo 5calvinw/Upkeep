@@ -7,17 +7,21 @@ class SideNav extends StatelessWidget {
   final String activeRoute;
   final String role;
 
-  const SideNav({super.key, this.activeRoute = 'dashboard', this.role = 'tenant'});
+  const SideNav({
+    super.key,
+    this.activeRoute = 'dashboard',
+    this.role = 'tenant',
+  });
 
   static const Color _slate900 = Color(0xFF0F172A);
   static const Color _slate500 = Color(0xFF64748B);
   static const Color _slate200 = Color(0xFFE2E8F0);
-  static const Color _bgColor = Color(0xFFF8FAFC);
+  static const Color _bgColor = Colors.white;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 252,
+      width: 256,
       decoration: const BoxDecoration(
         color: _bgColor,
         border: Border(right: BorderSide(color: _slate200)),
@@ -26,7 +30,7 @@ class SideNav extends StatelessWidget {
         children: [
           // Logo section
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
             child: Row(
               children: [
                 Container(
@@ -40,7 +44,11 @@ class SideNav extends StatelessWidget {
                       colors: [Color(0xFF031632), Color(0xFF1A2B48)],
                     ),
                   ),
-                  child: const Icon(Icons.architecture, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.architecture,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Column(
@@ -154,19 +162,22 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: isActive ? Colors.white : Colors.transparent,
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(8),
       elevation: isActive ? 1 : 0,
+      shadowColor: const Color(0x1F1E293B),
       child: InkWell(
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(8),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
               Icon(
                 icon,
                 size: 18,
-                color: isActive ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                color: isActive
+                    ? const Color(0xFF0F172A)
+                    : const Color(0xFF64748B),
               ),
               const SizedBox(width: 12),
               Text(
@@ -174,7 +185,9 @@ class _NavItem extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                  color: isActive ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                  color: isActive
+                      ? const Color(0xFF0F172A)
+                      : const Color(0xFF64748B),
                 ),
               ),
             ],
