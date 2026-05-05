@@ -10,10 +10,15 @@ import 'package:intl/intl.dart';
 
 class TicketDetailScreen extends StatefulWidget {
   final String ticketId;
+
   /// 'tenant' or 'manager' — controls SideNav active item and back-nav target.
   final String role;
 
-  const TicketDetailScreen({super.key, required this.ticketId, this.role = 'tenant'});
+  const TicketDetailScreen({
+    super.key,
+    required this.ticketId,
+    this.role = 'tenant',
+  });
 
   @override
   State<TicketDetailScreen> createState() => _TicketDetailScreenState();
@@ -37,7 +42,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   static const Color _navy = Color(0xFF283149);
   static const Color _bgGray = Color(0xFFF8FAFC);
-
+  static const double _detailPanelHeight = 593;
 
   @override
   void initState() {
@@ -127,7 +132,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         final bytes = await _pendingImage!.readAsBytes();
         photoUrl = await _ticketService.uploadPhoto(bytes, _pendingImage!.name);
       }
-      final msg = await _ticketService.sendMessage(widget.ticketId, text, photoUrl: photoUrl);
+      final msg = await _ticketService.sendMessage(
+        widget.ticketId,
+        text,
+        photoUrl: photoUrl,
+      );
       setState(() {
         _messages.add(msg);
         _messageController.clear();
@@ -153,7 +162,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', '')), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -178,8 +190,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
-                    : _buildContent(),
+                ? Center(
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  )
+                : _buildContent(),
           ),
         ],
       ),
@@ -201,11 +218,12 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               // Left column: Property details + Description + Attachments
               SizedBox(
                 width: 300,
+                height: _detailPanelHeight,
                 child: Column(
                   children: [
                     _buildPropertyCard(ticket),
                     const SizedBox(height: 16),
-                    _buildDescriptionCard(ticket),
+                    Expanded(child: _buildDescriptionCard(ticket)),
                   ],
                 ),
               ),
@@ -214,7 +232,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               Expanded(child: _buildMessageThread()),
               const SizedBox(width: 24),
               // Right: Audit trail
-              SizedBox(width: 281, child: _buildAuditTrail()),
+              SizedBox(
+                width: 281,
+                height: _detailPanelHeight,
+                child: _buildAuditTrail(),
+              ),
             ],
           ),
         ],
@@ -421,7 +443,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,7 +481,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            ticket.propertyName.isNotEmpty ? ticket.propertyName : 'Property',
+                            ticket.propertyName.isNotEmpty
+                                ? ticket.propertyName
+                                : 'Property',
                             style: GoogleFonts.dmSans(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -467,8 +493,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                           Row(
                             children: [
                               Text(
-                                ticket.unitNumber.isNotEmpty ? 'Unit ${ticket.unitNumber}' : 'N/A',
-                                style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black54),
+                                ticket.unitNumber.isNotEmpty
+                                    ? 'Unit ${ticket.unitNumber}'
+                                    : 'N/A',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 12,
+                                  color: Colors.black54,
+                                ),
                               ),
                             ],
                           ),
@@ -487,7 +518,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            ticket.tenantName.isNotEmpty ? ticket.tenantName : 'Tenant',
+                            ticket.tenantName.isNotEmpty
+                                ? ticket.tenantName
+                                : 'Tenant',
                             style: GoogleFonts.dmSans(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -496,7 +529,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                           ),
                           Text(
                             'Tenant',
-                            style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black54),
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
                           ),
                         ],
                       ),
@@ -520,83 +556,91 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4)),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Ticket Description',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: _navy,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Ticket Description',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: _navy,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            ticket.description,
-            style: GoogleFonts.dmSans(
-              fontSize: 13,
-              color: Colors.black,
-              height: 1.6,
+            const SizedBox(height: 8),
+            Text(
+              ticket.description,
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                color: Colors.black,
+                height: 1.6,
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Attachments (${ticket.photoUrls.length})',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: _navy,
+            const SizedBox(height: 24),
+            Text(
+              'Attachments (${ticket.photoUrls.length})',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: _navy,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          if (ticket.photoUrls.isNotEmpty)
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: ticket.photoUrls.map((url) {
-                return GestureDetector(
-                  onTap: () => _showImageDialog(url),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.network(
-                      url,
-                      width: 130,
-                      height: 90,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
+            const SizedBox(height: 8),
+            if (ticket.photoUrls.isNotEmpty)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: ticket.photoUrls.map((url) {
+                  return GestureDetector(
+                    onTap: () => _showImageDialog(url),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        url,
                         width: 130,
                         height: 90,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD9D9D9),
-                          borderRadius: BorderRadius.circular(10),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          width: 130,
+                          height: 90,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD9D9D9),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
                     ),
+                  );
+                }).toList(),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(
+                  4,
+                  (_) => Container(
+                    width: 130,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD9D9D9),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.image,
+                      color: Colors.white54,
+                      size: 24,
+                    ),
                   ),
-                );
-              }).toList(),
-            )
-          else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: List.generate(
-                4,
-                (_) => Container(
-                  width: 130,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD9D9D9),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.image, color: Colors.white54, size: 24),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -605,11 +649,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   Widget _buildMessageThread() {
     return Container(
-      height: 593,
+      height: _detailPanelHeight,
       decoration: BoxDecoration(
         color: const Color(0xFFF2F4F6),
         borderRadius: BorderRadius.circular(10),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4)),
+        ],
       ),
       child: Column(
         children: [
@@ -620,7 +666,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 1, offset: Offset(0, 1))],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 1,
+                  offset: Offset(0, 1),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,7 +688,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 const SizedBox(height: 2),
                 Text(
                   _messages.map((m) => m.senderName).toSet().join(', '),
-                  style: GoogleFonts.dmSans(fontSize: 11, color: Colors.black54),
+                  style: GoogleFonts.dmSans(
+                    fontSize: 11,
+                    color: Colors.black54,
+                  ),
                 ),
               ],
             ),
@@ -647,13 +702,17 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 ? Center(
                     child: Text(
                       'No messages yet',
-                      style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black38),
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        color: Colors.black38,
+                      ),
                     ),
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.all(14),
                     itemCount: _messages.length,
-                    itemBuilder: (context, index) => _buildMessageBubble(_messages[index]),
+                    itemBuilder: (context, index) =>
+                        _buildMessageBubble(_messages[index]),
                   ),
           ),
           // Input
@@ -701,7 +760,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                 color: Colors.black54,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.close, size: 12, color: Colors.white),
+                              child: const Icon(
+                                Icons.close,
+                                size: 12,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -712,10 +775,17 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   children: [
                     IconButton(
                       onPressed: _pickChatImage,
-                      icon: const Icon(Icons.attach_file, color: _navy, size: 20),
+                      icon: const Icon(
+                        Icons.attach_file,
+                        color: _navy,
+                        size: 20,
+                      ),
                       tooltip: 'Attach image',
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -724,10 +794,16 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         style: GoogleFonts.dmSans(fontSize: 12),
                         decoration: InputDecoration(
                           hintText: 'Type a message...',
-                          hintStyle: GoogleFonts.dmSans(fontSize: 12, color: Colors.black38),
+                          hintStyle: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            color: Colors.black38,
+                          ),
                           filled: true,
                           fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                             borderSide: BorderSide.none,
@@ -741,13 +817,23 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: _navy),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: _navy,
+                            ),
                           )
                         : IconButton(
                             onPressed: _sendMessage,
-                            icon: const Icon(Icons.send, color: _navy, size: 20),
+                            icon: const Icon(
+                              Icons.send,
+                              color: _navy,
+                              size: 20,
+                            ),
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                            constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32,
+                            ),
                           ),
                   ],
                 ),
@@ -765,11 +851,15 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
-        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isMe
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           // Sender name + time
           Row(
-            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+            mainAxisAlignment: isMe
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
             children: [
               if (!isMe)
                 Text(
@@ -827,11 +917,14 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         message.photoUrl!,
                         width: 200,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                        errorBuilder: (context, error, stackTrace) => Container(
                           width: 200,
                           height: 120,
                           color: const Color(0xFFD9D9D9),
-                          child: const Icon(Icons.broken_image, color: Colors.white54),
+                          child: const Icon(
+                            Icons.broken_image,
+                            color: Colors.white54,
+                          ),
                         ),
                       ),
                     ),
@@ -882,11 +975,15 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               child: Image.network(
                 url,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (context, error, stackTrace) => Container(
                   width: 300,
                   height: 300,
                   color: const Color(0xFFD9D9D9),
-                  child: const Icon(Icons.broken_image, size: 48, color: Colors.white54),
+                  child: const Icon(
+                    Icons.broken_image,
+                    size: 48,
+                    color: Colors.white54,
+                  ),
                 ),
               ),
             ),
@@ -902,7 +999,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     color: Colors.white,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.close, size: 18, color: Colors.black87),
+                  child: const Icon(
+                    Icons.close,
+                    size: 18,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
             ),
@@ -916,7 +1017,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   Widget _buildAuditTrail() {
     // Show all possible statuses, mark completed ones
-    final allStatuses = ['opened', 'acknowledged', 'in_progress', 'resolved', 'closed'];
+    final allStatuses = [
+      'opened',
+      'acknowledged',
+      'in_progress',
+      'resolved',
+      'closed',
+    ];
     final completedStatuses = _auditLog.map((e) => e.toStatus).toSet();
     final currentStatusIndex = allStatuses.indexOf(_ticket?.status ?? 'opened');
 
@@ -925,53 +1032,57 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.history, size: 28, color: _navy),
-              const SizedBox(width: 8),
-              Text(
-                'Audit Trail',
-                style: GoogleFonts.roboto(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: _navy,
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Timeline entries (reversed: newest at top)
-          ...List.generate(allStatuses.length, (i) {
-            final reverseIndex = allStatuses.length - 1 - i;
-            final statusKey = allStatuses[reverseIndex];
-            final isCompleted = completedStatuses.contains(statusKey);
-            final isCurrent = reverseIndex == currentStatusIndex;
-            final isLast = i == allStatuses.length - 1;
-
-            // Find matching audit entry
-            AuditLogEntry? entry;
-            for (final log in _auditLog) {
-              if (log.toStatus == statusKey) {
-                entry = log;
-              }
-            }
-
-            return _buildAuditTimelineItem(
-              statusKey: statusKey,
-              entry: entry,
-              isCompleted: isCompleted,
-              isCurrent: isCurrent,
-              isLast: isLast,
-              ticket: _ticket!,
-            );
-          }),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4)),
         ],
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.history, size: 28, color: _navy),
+                const SizedBox(width: 8),
+                Text(
+                  'Audit Trail',
+                  style: GoogleFonts.roboto(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: _navy,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Timeline entries (reversed: newest at top)
+            ...List.generate(allStatuses.length, (i) {
+              final reverseIndex = allStatuses.length - 1 - i;
+              final statusKey = allStatuses[reverseIndex];
+              final isCompleted = completedStatuses.contains(statusKey);
+              final isCurrent = reverseIndex == currentStatusIndex;
+              final isLast = i == allStatuses.length - 1;
+
+              // Find matching audit entry
+              AuditLogEntry? entry;
+              for (final log in _auditLog) {
+                if (log.toStatus == statusKey) {
+                  entry = log;
+                }
+              }
+
+              return _buildAuditTimelineItem(
+                statusKey: statusKey,
+                entry: entry,
+                isCompleted: isCompleted,
+                isCurrent: isCurrent,
+                isLast: isLast,
+                ticket: _ticket!,
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -988,100 +1099,113 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     final isFuture = !isCompleted;
 
     final row = Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Timeline dot + line
-          SizedBox(
-            width: 20,
-            child: Column(
-              children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isCurrent ? _navy : (isFuture ? Colors.white : Colors.white),
-                    border: Border.all(
-                      color: isFuture ? const Color(0xFFBAC7BF) : _navy,
-                      width: isCurrent ? 0 : 2,
-                    ),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Timeline dot + line
+        SizedBox(
+          width: 20,
+          child: Column(
+            children: [
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isCurrent
+                      ? _navy
+                      : (isFuture ? Colors.white : Colors.white),
+                  border: Border.all(
+                    color: isFuture ? const Color(0xFFBAC7BF) : _navy,
+                    width: isCurrent ? 0 : 2,
                   ),
-                  child: isCurrent
-                      ? const Icon(Icons.circle, size: 10, color: Colors.white)
-                      : isCompleted
-                          ? const Icon(Icons.check, size: 12, color: _navy)
-                          : null,
                 ),
-                if (!isLast)
-                  Expanded(
-                    child: Container(
-                      width: 3,
-                      color: const Color(0xFFBAC7BF),
+                child: isCurrent
+                    ? const Icon(Icons.circle, size: 10, color: Colors.white)
+                    : isCompleted
+                    ? const Icon(Icons.check, size: 12, color: _navy)
+                    : null,
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(width: 3, color: const Color(0xFFBAC7BF)),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        // Content
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: isLast ? 0 : 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: isFuture ? Colors.black26 : Colors.black,
+                  ),
+                ),
+                if (entry != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatDate(entry.createdAt),
+                    style: GoogleFonts.dmSans(
+                      fontSize: 11,
+                      color: Colors.black54,
                     ),
                   ),
+                  const SizedBox(height: 2),
+                  RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        color: Colors.black,
+                      ),
+                      children: [
+                        const TextSpan(text: 'Ticket '),
+                        TextSpan(
+                          text: '${ticket.title} #${ticket.id.substring(0, 4)}',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                  ),
+                  RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        color: Colors.black,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: statusKey == 'opened' ? 'opened by ' : 'by ',
+                        ),
+                        TextSpan(
+                          text: entry.actorName,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else if (isFuture) ...[
+                  const SizedBox(height: 2),
+                  if (statusKey == 'closed')
+                    Text(
+                      'Awaiting action from ${ticket.tenantName}',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 10,
+                        color: Colors.black54,
+                      ),
+                    ),
+                ],
               ],
             ),
           ),
-          const SizedBox(width: 10),
-          // Content
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: isFuture ? Colors.black26 : Colors.black,
-                    ),
-                  ),
-                  if (entry != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      _formatDate(entry.createdAt),
-                      style: GoogleFonts.dmSans(fontSize: 11, color: Colors.black54),
-                    ),
-                    const SizedBox(height: 2),
-                    RichText(
-                      text: TextSpan(
-                        style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black),
-                        children: [
-                          const TextSpan(text: 'Ticket '),
-                          TextSpan(
-                            text: '${ticket.title} #${ticket.id.substring(0, 4)}',
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ],
-                      ),
-                    ),
-                    RichText(
-                      text: TextSpan(
-                        style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black),
-                        children: [
-                          TextSpan(text: statusKey == 'opened' ? 'opened by ' : 'by '),
-                          TextSpan(
-                            text: entry.actorName,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ] else if (isFuture) ...[
-                    const SizedBox(height: 2),
-                    if (statusKey == 'closed')
-                      Text(
-                        'Awaiting action from ${ticket.tenantName}',
-                        style: GoogleFonts.dmSans(fontSize: 10, color: Colors.black54),
-                      ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
+      ],
     );
     return isLast ? row : IntrinsicHeight(child: row);
   }
