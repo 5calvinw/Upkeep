@@ -33,6 +33,7 @@ TRANSITION_ROLE: dict[TicketStatus, UserRole] = {
 
 
 def _ticket_to_detail(ticket: MaintenanceRequest) -> dict:
+    photo_urls = ticket.photo_urls or ([ticket.photo_url] if ticket.photo_url else [])
     data = {
         "id": ticket.id,
         "title": ticket.title,
@@ -40,7 +41,8 @@ def _ticket_to_detail(ticket: MaintenanceRequest) -> dict:
         "category": ticket.category,
         "urgency": ticket.urgency,
         "status": ticket.status,
-        "photo_url": ticket.photo_url,
+        "photo_url": photo_urls[0] if photo_urls else None,
+        "photo_urls": photo_urls,
         "tenant_id": ticket.tenant_id,
         "unit_id": ticket.unit_id,
         "created_at": ticket.created_at,
@@ -66,7 +68,8 @@ def create_ticket(
         description=body.description,
         category=body.category,
         urgency=body.urgency,
-        photo_url=body.photo_url,
+        photo_url=body.photo_urls[0] if body.photo_urls else None,
+        photo_urls=body.photo_urls,
         tenant_id=current_user.id,
         unit_id=current_user.unit_id,
     )

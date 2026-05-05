@@ -1,6 +1,6 @@
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.models.ticket import TicketStatus, TicketCategory, TicketUrgency
 
 
@@ -9,7 +9,7 @@ class TicketCreate(BaseModel):
     description: str
     category: TicketCategory
     urgency: TicketUrgency
-    photo_url: str | None = None
+    photo_urls: list[str] = Field(default_factory=list)
 
 
 class TicketStatusUpdate(BaseModel):
@@ -24,7 +24,8 @@ class TicketOut(BaseModel):
     category: TicketCategory
     urgency: TicketUrgency
     status: TicketStatus
-    photo_url: str | None
+    photo_url: str | None = None
+    photo_urls: list[str] = Field(default_factory=list)
     tenant_id: UUID
     unit_id: UUID
     created_at: datetime

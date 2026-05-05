@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
-import '../models/ticket.dart';
-import 'auth_service.dart';
-import '../../core/constants.dart';
+import 'package:frontend/features/tickets/data/models/ticket.dart';
+import 'package:frontend/features/auth/data/auth_service.dart';
+import 'package:frontend/core/constants.dart';
 
 class TicketService {
   static const String _baseUrl = kBaseUrl;
@@ -123,7 +123,7 @@ class TicketService {
     required String description,
     required String category,
     required String urgency,
-    String? photoUrl,
+    List<String> photoUrls = const [],
   }) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/tickets'),
@@ -133,7 +133,7 @@ class TicketService {
         'description': description,
         'category': category,
         'urgency': urgency,
-        'photo_url': photoUrl,
+        'photo_urls': photoUrls,
       }),
     );
     if (response.statusCode == 201 || response.statusCode == 200) {

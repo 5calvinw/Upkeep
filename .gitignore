@@ -8,7 +8,7 @@
 .history
 .env
 context
-
+AGENTS.md
 venv/
 __pycache__/
 backend/venv

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../ticket_detail_screen.dart';
+import 'package:frontend/features/tickets/presentation/screens/ticket_detail_screen.dart';
 
 /// Thin shell that renders the shared [TicketDetailScreen] in manager context.
 /// The shared screen detects the user's role and adjusts controls accordingly.
