@@ -40,7 +40,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   bool _isLoading = true;
   String? _error;
 
-  static const Color _navy = Color(0xFF283149);
+  static const Color _navy = Color(0xFF1E293B);
   static const Color _bgGray = Color(0xFFF8FAFC);
   static const double _detailPanelHeight = 593;
 
@@ -181,64 +181,106 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isPhone = MediaQuery.sizeOf(context).width < 720;
+    final content = _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : _error != null
+        ? Center(
+            child: Text(_error!, style: const TextStyle(color: Colors.red)),
+          )
+        : _buildContent();
+
     return Scaffold(
       backgroundColor: _bgGray,
-      body: Row(
-        children: [
-          SideNav(activeRoute: 'tickets', role: widget.role),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                ? Center(
-                    child: Text(
-                      _error!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  )
-                : _buildContent(),
-          ),
-        ],
-      ),
+      appBar: isPhone
+          ? AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              iconTheme: const IconThemeData(color: _navy),
+              title: Text(
+                'Ticket Details',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _navy,
+                ),
+              ),
+            )
+          : null,
+      drawer: isPhone
+          ? Drawer(
+              child: SideNav(
+                activeRoute: 'tickets',
+                role: widget.role,
+                isCompactOverride: false,
+              ),
+            )
+          : null,
+      body: isPhone
+          ? content
+          : Row(
+              children: [
+                SideNav(activeRoute: 'tickets', role: widget.role),
+                Expanded(child: content),
+              ],
+            ),
     );
   }
 
   Widget _buildContent() {
     final ticket = _ticket!;
+    final width = MediaQuery.sizeOf(context).width;
+    final isPhone = width < 720;
+    final stackPanels = width < 1180;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.fromLTRB(40, isPhone ? 24 : 40, 40, 48),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(ticket),
           const SizedBox(height: 24),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Left column: Property details + Description + Attachments
-              SizedBox(
-                width: 300,
-                height: _detailPanelHeight,
-                child: Column(
-                  children: [
-                    _buildPropertyCard(ticket),
-                    const SizedBox(height: 16),
-                    Expanded(child: _buildDescriptionCard(ticket)),
-                  ],
+          if (stackPanels)
+            Column(
+              children: [
+                _buildPropertyCard(ticket),
+                const SizedBox(height: 16),
+                _buildDescriptionCard(ticket),
+                const SizedBox(height: 16),
+                _buildMessageThread(),
+                const SizedBox(height: 16),
+                _buildAuditTrail(),
+              ],
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left column: Property details + Description + Attachments
+                SizedBox(
+                  width: 300,
+                  height: _detailPanelHeight,
+                  child: Column(
+                    children: [
+                      _buildPropertyCard(ticket),
+                      const SizedBox(height: 16),
+                      Expanded(child: _buildDescriptionCard(ticket)),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 24),
-              // Center: Message thread
-              Expanded(child: _buildMessageThread()),
-              const SizedBox(width: 24),
-              // Right: Audit trail
-              SizedBox(
-                width: 281,
-                height: _detailPanelHeight,
-                child: _buildAuditTrail(),
-              ),
-            ],
-          ),
+                const SizedBox(width: 24),
+                // Center: Message thread
+                Expanded(child: _buildMessageThread()),
+                const SizedBox(width: 24),
+                // Right: Audit trail
+                SizedBox(
+                  width: 281,
+                  height: _detailPanelHeight,
+                  child: _buildAuditTrail(),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -259,25 +301,46 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                ticket.title,
-                style: GoogleFonts.inter(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black,
-                ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 760;
+            final title = Text(
+              ticket.title,
+              style: GoogleFonts.inter(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: _navy,
               ),
-            ),
-            // Action buttons
-            if (!ticket.isClosed) ...[
-              _buildEditButton(),
-              const SizedBox(width: 12),
-              _buildActionButton(ticket),
-            ],
-          ],
+            );
+            final actions = [
+              if (!ticket.isClosed) ...[
+                _buildEditButton(),
+                _buildActionButton(ticket),
+              ],
+            ];
+
+            if (isNarrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  title,
+                  if (actions.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Wrap(spacing: 12, runSpacing: 12, children: actions),
+                  ],
+                ],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: title),
+                const SizedBox(width: 12),
+                Wrap(spacing: 12, runSpacing: 12, children: actions),
+              ],
+            );
+          },
         ),
         const SizedBox(height: 12),
         Row(
@@ -293,15 +356,15 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   Widget _buildEditButton() {
     return Container(
-      height: 35,
+      height: 40,
       decoration: BoxDecoration(
-        color: const Color(0xFFE6E8EA),
-        borderRadius: BorderRadius.circular(5),
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(8),
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Edit ticket coming soon')),
@@ -331,15 +394,15 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   Widget _buildActionButton(Ticket ticket) {
     return Container(
-      height: 35,
+      height: 40,
       decoration: BoxDecoration(
         color: _navy,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(8),
           onTap: _advanceStatus,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -390,7 +453,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -416,7 +479,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFD5E3FC),
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -442,9 +505,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4)),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -456,7 +523,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             decoration: const BoxDecoration(
               color: _navy,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Text(
               'Property Details',
@@ -555,9 +622,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4)),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: SingleChildScrollView(
@@ -651,10 +722,14 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     return Container(
       height: _detailPanelHeight,
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F4F6),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4)),
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -665,10 +740,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             padding: const EdgeInsets.all(14),
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black12,
+                  color: Color(0xFFE2E8F0),
                   blurRadius: 1,
                   offset: Offset(0, 1),
                 ),
@@ -1031,9 +1106,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4)),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: SingleChildScrollView(

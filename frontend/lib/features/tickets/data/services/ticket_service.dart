@@ -25,7 +25,9 @@ class TicketService {
     if (response.statusCode == 200) {
       return Ticket.fromJson(jsonDecode(response.body));
     }
-    throw Exception(jsonDecode(response.body)['detail'] ?? 'Failed to load ticket');
+    throw Exception(
+      jsonDecode(response.body)['detail'] ?? 'Failed to load ticket',
+    );
   }
 
   Future<List<AuditLogEntry>> getAuditLog(String ticketId) async {
@@ -52,22 +54,33 @@ class TicketService {
     throw Exception('Failed to load messages');
   }
 
-  Future<TicketMessage> sendMessage(String ticketId, String content, {String? photoUrl}) async {
+  Future<TicketMessage> sendMessage(
+    String ticketId,
+    String content, {
+    String? photoUrl,
+  }) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/tickets/$ticketId/messages'),
       headers: await _headers(),
       body: jsonEncode({
         'content': content,
+        // ignore: use_null_aware_elements
         if (photoUrl != null) 'photo_url': photoUrl,
       }),
     );
     if (response.statusCode == 201) {
       return TicketMessage.fromJson(jsonDecode(response.body));
     }
-    throw Exception(jsonDecode(response.body)['detail'] ?? 'Failed to send message');
+    throw Exception(
+      jsonDecode(response.body)['detail'] ?? 'Failed to send message',
+    );
   }
 
-  Future<Ticket> advanceStatus(String ticketId, String newStatus, {String? note}) async {
+  Future<Ticket> advanceStatus(
+    String ticketId,
+    String newStatus, {
+    String? note,
+  }) async {
     final response = await http.patch(
       Uri.parse('$_baseUrl/tickets/$ticketId/status'),
       headers: await _headers(),
@@ -79,7 +92,9 @@ class TicketService {
     if (response.statusCode == 200) {
       return Ticket.fromJson(jsonDecode(response.body));
     }
-    throw Exception(jsonDecode(response.body)['detail'] ?? 'Failed to update status');
+    throw Exception(
+      jsonDecode(response.body)['detail'] ?? 'Failed to update status',
+    );
   }
 
   Future<UserInfo> getCurrentUser() async {
@@ -102,14 +117,21 @@ class TicketService {
       final list = jsonDecode(response.body) as List;
       return list.map((e) => Ticket.fromJson(e)).toList();
     }
-    throw Exception(jsonDecode(response.body)['detail'] ?? 'Failed to load tickets');
+    throw Exception(
+      jsonDecode(response.body)['detail'] ?? 'Failed to load tickets',
+    );
   }
 
   Future<String> uploadPhoto(Uint8List bytes, String filename) async {
     final token = await _authService.getToken();
-    final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/upload'));
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$_baseUrl/upload'),
+    );
     if (token != null) request.headers['Authorization'] = 'Bearer $token';
-    request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    request.files.add(
+      http.MultipartFile.fromBytes('file', bytes, filename: filename),
+    );
     final streamed = await request.send();
     if (streamed.statusCode == 200) {
       final body = jsonDecode(await streamed.stream.bytesToString());
@@ -139,6 +161,8 @@ class TicketService {
     if (response.statusCode == 201 || response.statusCode == 200) {
       return Ticket.fromJson(jsonDecode(response.body));
     }
-    throw Exception(jsonDecode(response.body)['detail'] ?? 'Failed to create ticket');
+    throw Exception(
+      jsonDecode(response.body)['detail'] ?? 'Failed to create ticket',
+    );
   }
 }

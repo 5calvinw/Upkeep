@@ -39,10 +39,13 @@ class Ticket {
       category: json['category']?.toString() ?? '',
       urgency: json['urgency']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
-      photoUrls: (json['photo_urls'] as List<dynamic>?)
+      photoUrls:
+          (json['photo_urls'] as List<dynamic>?)
               ?.map((item) => item.toString())
               .toList() ??
-          (json['photo_url'] != null ? [json['photo_url'].toString()] : const []),
+          (json['photo_url'] != null
+              ? [json['photo_url'].toString()]
+              : const []),
       tenantId: json['tenant_id']?.toString() ?? '',
       unitId: json['unit_id']?.toString() ?? '',
       tenantName: json['tenant_name']?.toString() ?? '',

@@ -20,6 +20,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
   final _descriptionController = TextEditingController();
   final TicketService _ticketService = TicketService();
   final ImagePicker _imagePicker = ImagePicker();
+  final GlobalKey _categoryFieldKey = GlobalKey();
   static const int _maxAttachments = 4;
 
   String _selectedCategory = TicketCategory.values.first['value']!;
@@ -32,11 +33,14 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
   List<Ticket> _recentTickets = [];
   bool _loadingRecent = true;
 
-  static const Color _navy = Color(0xFF283149);
+  static const Color _navy = Color(0xFF1E293B);
   static const Color _bgGray = Color(0xFFF8FAFC);
   static const Color _blue = Color(0xFF2563EB);
   static const Color _red = Color(0xFFD00000);
-  static const Color _inputBorder = Color(0x80283149);
+  static const Color _inputBorder = Color(0xFFCBD5E1);
+  static const double _contentWidth = 920;
+
+  bool _isPhone(BuildContext context) => MediaQuery.sizeOf(context).width < 720;
 
   @override
   void initState() {
@@ -119,86 +123,126 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isPhone = _isPhone(context);
+    final content = SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        isPhone ? 20 : 40,
+        isPhone ? 24 : 40,
+        isPhone ? 20 : 40,
+        48,
+      ),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _contentWidth),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Page title ──
+              SizedBox(
+                width: double.infinity,
+                child: Text(
+                  'Create a New Ticket',
+                  style: GoogleFonts.inter(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: _navy,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                width: double.infinity,
+                child: Text(
+                  'Make sure that it\'s a new problem! Check the "Tickets" tab to see if a identical ticket exists.',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 13,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // ── Form card ──
+              _buildFormCard(),
+
+              const SizedBox(height: 32),
+
+              // ── Recent Tickets & Stats ──
+              SizedBox(
+                width: double.infinity,
+                child: Text(
+                  'Recent Tickets & Stats',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: _navy,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildStatCards(),
+              const SizedBox(height: 16),
+              _buildRecentTicketsTable(),
+            ],
+          ),
+        ),
+      ),
+    );
+
     return Scaffold(
       backgroundColor: _bgGray,
-      body: Row(
-        children: [
-          const SideNav(activeRoute: 'dashboard', role: 'tenant'),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(32, 40, 32, 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // ── Page title ──
-                  SizedBox(
-                    width: 733,
-                    child: Text(
-                      'Create a New Ticket',
-                      style: GoogleFonts.inter(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  SizedBox(
-                    width: 733,
-                    child: Text(
-                      'Make sure that it\'s a new problem! Check the "Tickets" tab to see if a identical ticket exists.',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 12,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // ── Form card ──
-                  _buildFormCard(),
-
-                  const SizedBox(height: 32),
-
-                  // ── Recent Tickets & Stats ──
-                  SizedBox(
-                    width: 733,
-                    child: Text(
-                      'Recent Tickets & Stats',
-                      style: GoogleFonts.inter(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(width: 733, child: _buildStatCards()),
-                  const SizedBox(height: 16),
-                  _buildRecentTicketsTable(),
-                ],
+      appBar: isPhone
+          ? AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              iconTheme: const IconThemeData(color: _navy),
+              title: Text(
+                'New Ticket',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _navy,
+                ),
               ),
+            )
+          : null,
+      drawer: isPhone
+          ? const Drawer(
+              child: SideNav(
+                activeRoute: 'dashboard',
+                role: 'tenant',
+                isCompactOverride: false,
+              ),
+            )
+          : null,
+      body: isPhone
+          ? content
+          : Row(
+              children: [
+                const SideNav(activeRoute: 'dashboard', role: 'tenant'),
+                Expanded(child: content),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
   // ── Form card (white rounded container) ──────────────────────────────────
 
   Widget _buildFormCard() {
+    final isPhone = _isPhone(context);
     return Container(
-      width: 733,
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x40000000),
-            blurRadius: 4,
-            offset: Offset(0, 4),
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -208,221 +252,306 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Row 1: Title + Category
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title field (takes more space)
-                Expanded(
-                  flex: 5,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildFieldLabelWithCount(
-                        'Title',
-                        _titleController.text.length,
-                        100,
-                      ),
-                      const SizedBox(height: 4),
-                      SizedBox(
-                        height: 35,
-                        child: TextFormField(
-                          controller: _titleController,
-                          maxLength: 100,
-                          style: GoogleFonts.inter(fontSize: 13),
-                          decoration: _inputDecoration(
-                            null,
-                          ).copyWith(counterText: ''),
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? 'Title is required'
-                              : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 24),
-                // Category dropdown
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Category',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      SizedBox(
-                        height: 35,
-                        child: DropdownButtonFormField<String>(
-                          // ignore: deprecated_member_use
-                          value: _selectedCategory,
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: Colors.black87,
-                          ),
-                          decoration: _inputDecoration(null),
-                          items: TicketCategory.values
-                              .map(
-                                (e) => DropdownMenuItem(
-                                  value: e['value'],
-                                  child: Text(e['label']!),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (v) =>
-                              setState(() => _selectedCategory = v!),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            if (isPhone)
+              Column(
+                children: [
+                  _buildTitleField(),
+                  const SizedBox(height: 16),
+                  _buildCategoryField(),
+                ],
+              )
+            else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 5, child: _buildTitleField()),
+                  const SizedBox(width: 24),
+                  Expanded(flex: 3, child: _buildCategoryField()),
+                ],
+              ),
             const SizedBox(height: 12),
 
             // Row 2: Description + Supporting Pictures
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Description
-                Expanded(
-                  flex: 5,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildFieldLabelWithCount(
-                        'Description',
-                        _descriptionController.text.length,
-                        300,
-                      ),
-                      const SizedBox(height: 4),
-                      SizedBox(
-                        height: 175,
-                        child: TextFormField(
-                          controller: _descriptionController,
-                          maxLength: 300,
-                          maxLines: null,
-                          expands: true,
-                          textAlignVertical: TextAlignVertical.top,
-                          style: GoogleFonts.inter(fontSize: 13),
-                          decoration: _inputDecoration(
-                            null,
-                          ).copyWith(counterText: ''),
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? 'Description is required'
-                              : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 24),
-                // Supporting Pictures
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Supporting Pictures (optional)',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      _buildAttachmentsPanel(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            if (isPhone)
+              Column(
+                children: [
+                  _buildDescriptionField(),
+                  const SizedBox(height: 16),
+                  _buildSupportingPicturesField(),
+                ],
+              )
+            else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 5, child: _buildDescriptionField()),
+                  const SizedBox(width: 24),
+                  Expanded(flex: 3, child: _buildSupportingPicturesField()),
+                ],
+              ),
             const SizedBox(height: 16),
 
             // Bottom row: checkboxes + Submit
-            Row(
-              children: [
-                // "Make my ticket private" checkbox
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: Checkbox(
-                    value: _isPrivate,
-                    onChanged: (v) => setState(() => _isPrivate = v ?? false),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    activeColor: _navy,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Make my ticket private',
-                  style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black),
-                ),
-                const SizedBox(width: 32),
-                // "Urgent" checkbox
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: Checkbox(
-                    value: _isUrgent,
-                    onChanged: (v) => setState(() => _isUrgent = v ?? false),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    activeColor: _navy,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Urgent',
-                  style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black),
-                ),
-                const Spacer(),
-                // Submit button
-                SizedBox(
-                  width: 125,
-                  height: 35,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleSubmit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _navy,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(5),
+            if (isPhone)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Wrap(
+                    spacing: 20,
+                    runSpacing: 10,
+                    children: [
+                      _buildCheckboxWithLabel(
+                        value: _isPrivate,
+                        onChanged: (v) => setState(() => _isPrivate = v ?? false),
+                        label: 'Make my ticket private',
                       ),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            'Submit',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                      _buildCheckboxWithLabel(
+                        value: _isUrgent,
+                        onChanged: (v) => setState(() => _isUrgent = v ?? false),
+                        label: 'Urgent',
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(height: 12),
+                  Align(alignment: Alignment.centerRight, child: _buildSubmitButton()),
+                ],
+              )
+            else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Wrap(
+                      spacing: 20,
+                      runSpacing: 10,
+                      children: [
+                        _buildCheckboxWithLabel(
+                          value: _isPrivate,
+                          onChanged: (v) => setState(() => _isPrivate = v ?? false),
+                          label: 'Make my ticket private',
+                        ),
+                        _buildCheckboxWithLabel(
+                          value: _isUrgent,
+                          onChanged: (v) => setState(() => _isUrgent = v ?? false),
+                          label: 'Urgent',
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildSubmitButton(),
+                ],
+              ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCheckboxWithLabel({
+    required bool value,
+    required ValueChanged<bool?> onChanged,
+    required String label,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 20,
+          height: 20,
+          child: Checkbox(
+            value: value,
+            onChanged: onChanged,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
+            activeColor: _navy,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(label, style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black)),
+      ],
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return SizedBox(
+      width: 132,
+      height: 40,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _handleSubmit,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _navy,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : Text(
+                'Submit',
+                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildTitleField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildFieldLabelWithCount('Title', _titleController.text.length, 100),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 35,
+          child: TextFormField(
+            controller: _titleController,
+            maxLength: 100,
+            style: GoogleFonts.inter(fontSize: 13),
+            decoration: _inputDecoration(null).copyWith(counterText: ''),
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Title is required' : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Category',
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: _navy,
+          ),
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 35,
+          child: InkWell(
+            key: _categoryFieldKey,
+            onTap: _openCategoryMenu,
+            borderRadius: BorderRadius.circular(8),
+            child: InputDecorator(
+              decoration: _inputDecoration(null).copyWith(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _selectedCategoryLabel(),
+                      style: GoogleFonts.inter(fontSize: 13, color: Colors.black87),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const Icon(Icons.arrow_drop_down, color: Color(0xFF64748B)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openCategoryMenu() async {
+    final ctx = _categoryFieldKey.currentContext;
+    if (ctx == null) return;
+
+    final box = ctx.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final offset = box.localToGlobal(Offset.zero);
+    final size = box.size;
+
+    final picked = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        offset.dx,
+        offset.dy + size.height,
+        offset.dx + size.width,
+        offset.dy,
+      ),
+      items: TicketCategory.values
+          .map(
+            (e) => PopupMenuItem<String>(
+              value: e['value'],
+              child: Text(
+                e['label']!,
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.black87),
+              ),
+            ),
+          )
+          .toList(growable: false),
+    );
+
+    if (picked != null && mounted) {
+      setState(() => _selectedCategory = picked);
+    }
+  }
+
+  String _selectedCategoryLabel() {
+    for (final category in TicketCategory.values) {
+      if (category['value'] == _selectedCategory) {
+        return category['label']!;
+      }
+    }
+    return _selectedCategory;
+  }
+
+  Widget _buildDescriptionField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildFieldLabelWithCount(
+          'Description',
+          _descriptionController.text.length,
+          300,
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 175,
+          child: TextFormField(
+            controller: _descriptionController,
+            maxLength: 300,
+            maxLines: null,
+            expands: true,
+            textAlignVertical: TextAlignVertical.top,
+            style: GoogleFonts.inter(fontSize: 13),
+            decoration: _inputDecoration(null).copyWith(counterText: ''),
+            validator: (v) => (v == null || v.trim().isEmpty)
+                ? 'Description is required'
+                : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSupportingPicturesField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Supporting Pictures (optional)',
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
+          ),
+        ),
+        const SizedBox(height: 4),
+        _buildAttachmentsPanel(),
+      ],
     );
   }
 
@@ -434,12 +563,12 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
         .where((t) => t.status != 'closed')
         .length;
 
-    return Row(
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
       children: [
         _buildStatCard('Total Tickets:', totalTickets.toString(), '(Last 24h)'),
-        const SizedBox(width: 16),
         _buildStatCard('Your Active Tickets:', activeTickets.toString(), null),
-        const SizedBox(width: 16),
         _buildStatCard('Manager Last Online:', '—', null),
       ],
     );
@@ -447,16 +576,16 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
 
   Widget _buildStatCard(String label, String value, String? sub) {
     return Container(
-      width: 180,
-      padding: const EdgeInsets.all(12),
+      width: 200,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x40000000),
-            blurRadius: 4,
-            offset: Offset(0, 4),
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -469,7 +598,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Colors.black,
+              color: _navy,
             ),
           ),
           Row(
@@ -481,7 +610,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: Colors.black,
+                  color: _navy,
                 ),
               ),
               if (sub != null) ...[
@@ -506,100 +635,128 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
 
   Widget _buildRecentTicketsTable() {
     return Container(
-      width: 733,
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x40000000),
-            blurRadius: 4,
-            offset: Offset(0, 1),
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         children: [
-          // Table header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF2F4F6),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    'Title',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                    ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final tableWidth = constraints.maxWidth < 720
+                  ? 720.0
+                  : constraints.maxWidth;
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: tableWidth,
+                  child: Column(
+                    children: [
+                      // Table header
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF8FAFC),
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Color(0xFFF1F5F9),
+                              width: 1,
+                            ),
+                          ),
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Text(
+                                'Title',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                'Category',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                'Status',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 98,
+                              child: Text(
+                                'Actions',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Table body
+                      if (_loadingRecent)
+                        const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else if (_recentTickets.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Center(
+                            child: Text(
+                              'No tickets yet.',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 13,
+                                color: Colors.black38,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        ...List.generate(
+                          _recentTickets.length > 5 ? 5 : _recentTickets.length,
+                          (i) => _buildTicketRow(_recentTickets[i], i),
+                        ),
+                    ],
                   ),
                 ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'Category',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'Status',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 98,
-                  child: Text(
-                    'Actions',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           ),
-          // Table body
-          if (_loadingRecent)
-            const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (_recentTickets.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Center(
-                child: Text(
-                  'No tickets yet.',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 13,
-                    color: Colors.black38,
-                  ),
-                ),
-              ),
-            )
-          else
-            ...List.generate(
-              _recentTickets.length > 5 ? 5 : _recentTickets.length,
-              (i) => _buildTicketRow(_recentTickets[i], i),
-            ),
         ],
       ),
     );
@@ -610,7 +767,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: const Color(0xFFD9D9D9),
+            color: const Color(0xFFF1F5F9),
             width:
                 index <
                     (_recentTickets.length > 5 ? 4 : _recentTickets.length - 1)
@@ -664,8 +821,8 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
               child: Container(
                 height: 30,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE6E8EA),
-                  borderRadius: BorderRadius.circular(4),
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 alignment: Alignment.center,
                 child: Text(
@@ -673,7 +830,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF191C1E),
+                    color: _navy,
                   ),
                 ),
               ),
@@ -714,7 +871,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: entry[0] as Color,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(5),
         ),
         child: Text(
           entry[2] as String,
@@ -765,7 +922,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: _inputBorder),
       ),
       child: selectedCount == 0
@@ -958,15 +1115,15 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
       hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.black38),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: _inputBorder),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: _inputBorder),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: _blue),
       ),
       errorBorder: OutlineInputBorder(

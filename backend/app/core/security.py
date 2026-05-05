@@ -15,7 +15,12 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    try:
+        return pwd_context.verify(plain, hashed)
+    except ValueError:
+        # Some bcrypt backends raise ValueError for invalid input lengths.
+        # Treat as a failed password check instead of bubbling a 500.
+        return False
 
 
 def create_access_token(user_id: UUID, role: UserRole) -> str:
