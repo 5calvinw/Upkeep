@@ -165,35 +165,60 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isPhone = MediaQuery.sizeOf(context).width < 720;
+    final content = _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : _error != null
+        ? Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(_error!, style: const TextStyle(color: Colors.red)),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadTickets,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          )
+        : _buildContent();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      body: Row(
-        children: [
-          const SideNav(activeRoute: 'dashboard', role: 'manager'),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _error!,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _loadTickets,
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  )
-                : _buildContent(),
-          ),
-        ],
-      ),
+      appBar: isPhone
+          ? AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              iconTheme: const IconThemeData(color: _navy),
+              title: Text(
+                'Dashboard',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _navy,
+                ),
+              ),
+            )
+          : null,
+      drawer: isPhone
+          ? const Drawer(
+              child: SideNav(
+                activeRoute: 'dashboard',
+                role: 'manager',
+                isCompactOverride: false,
+              ),
+            )
+          : null,
+      body: isPhone
+          ? content
+          : Row(
+              children: [
+                const SideNav(activeRoute: 'dashboard', role: 'manager'),
+                Expanded(child: content),
+              ],
+            ),
     );
   }
 
@@ -222,8 +247,11 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             if (aUrgent != bUrgent) return aUrgent.compareTo(bUrgent);
             return b.createdAt.compareTo(a.createdAt);
           });
+    final width = MediaQuery.sizeOf(context).width;
+    final isPhone = width < 720;
+    final stackPanels = width < 1040;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(isPhone ? 20 : 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -257,67 +285,90 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
           ),
           const SizedBox(height: 24),
           // Stats row
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.confirmation_number_outlined,
-                  iconColor: const Color(0xFF3B82F6),
-                  label: 'TOTAL ACTIVE',
-                  value: '${activeTickets.length}',
-                  valueColor: _navy,
-                  subtext: 'Open Tickets',
-                  accentColor: const Color(0xFF3B82F6),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.timer_outlined,
-                  iconColor: const Color(0xFFEF4444),
-                  label: 'CRITICAL',
-                  value: '${criticalTickets.length}',
-                  valueColor: const Color(0xFFEF4444),
-                  subtext: 'Urgent Tickets',
-                  accentColor: const Color(0xFFEF4444),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.swap_horiz,
-                  iconColor: const Color(0xFFF59E0B),
-                  label: 'AWAITING',
-                  value: '${awaitingTickets.length}',
-                  valueColor: const Color(0xFFF59E0B),
-                  subtext: 'Tickets Awaiting Actions',
-                  accentColor: const Color(0xFFF59E0B),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.check_circle_outline,
-                  iconColor: const Color(0xFF22C55E),
-                  label: 'TICKETS CLOSED',
-                  value: '$closedToday',
-                  valueColor: const Color(0xFF22C55E),
-                  subtext: 'Tickets Closed (last 24h)',
-                  accentColor: const Color(0xFF22C55E),
-                ),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth < 720
+                  ? 1
+                  : constraints.maxWidth < 1100
+                  ? 2
+                  : 4;
+              final cardWidth =
+                  (constraints.maxWidth - (columns - 1) * 16) / columns;
+              return Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildStatCard(
+                      icon: Icons.confirmation_number_outlined,
+                      iconColor: const Color(0xFF3B82F6),
+                      label: 'TOTAL ACTIVE',
+                      value: '${activeTickets.length}',
+                      valueColor: _navy,
+                      subtext: 'Open Tickets',
+                      accentColor: const Color(0xFF3B82F6),
+                    ),
+                  ),
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildStatCard(
+                      icon: Icons.timer_outlined,
+                      iconColor: const Color(0xFFEF4444),
+                      label: 'CRITICAL',
+                      value: '${criticalTickets.length}',
+                      valueColor: const Color(0xFFEF4444),
+                      subtext: 'Urgent Tickets',
+                      accentColor: const Color(0xFFEF4444),
+                    ),
+                  ),
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildStatCard(
+                      icon: Icons.swap_horiz,
+                      iconColor: const Color(0xFFF59E0B),
+                      label: 'AWAITING',
+                      value: '${awaitingTickets.length}',
+                      valueColor: const Color(0xFFF59E0B),
+                      subtext: 'Tickets Awaiting Actions',
+                      accentColor: const Color(0xFFF59E0B),
+                    ),
+                  ),
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildStatCard(
+                      icon: Icons.check_circle_outline,
+                      iconColor: const Color(0xFF22C55E),
+                      label: 'TICKETS CLOSED',
+                      value: '$closedToday',
+                      valueColor: const Color(0xFF22C55E),
+                      subtext: 'Tickets Closed (last 24h)',
+                      accentColor: const Color(0xFF22C55E),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 32),
           // Action Required + Notifications
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(flex: 3, child: _buildActionRequired(actionRequired)),
-              const SizedBox(width: 20),
-              Expanded(flex: 2, child: _buildNotifications(_notifications)),
-            ],
-          ),
+          if (stackPanels)
+            Column(
+              children: [
+                _buildActionRequired(actionRequired),
+                const SizedBox(height: 20),
+                _buildNotifications(_notifications),
+              ],
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 3, child: _buildActionRequired(actionRequired)),
+                const SizedBox(width: 20),
+                Expanded(flex: 2, child: _buildNotifications(_notifications)),
+              ],
+            ),
         ],
       ),
     );
@@ -644,7 +695,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           SizedBox(
             height: 260,
             child: items.isEmpty

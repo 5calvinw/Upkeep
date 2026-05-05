@@ -174,35 +174,60 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isPhone = MediaQuery.sizeOf(context).width < 720;
+    final content = _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : _error != null
+        ? Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(_error!, style: const TextStyle(color: Colors.red)),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadData,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          )
+        : _buildContent();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      body: Row(
-        children: [
-          const SideNav(activeRoute: 'dashboard', role: 'tenant'),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _error!,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _loadData,
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  )
-                : _buildContent(),
-          ),
-        ],
-      ),
+      appBar: isPhone
+          ? AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              iconTheme: const IconThemeData(color: _navy),
+              title: Text(
+                'Dashboard',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _navy,
+                ),
+              ),
+            )
+          : null,
+      drawer: isPhone
+          ? const Drawer(
+              child: SideNav(
+                activeRoute: 'dashboard',
+                role: 'tenant',
+                isCompactOverride: false,
+              ),
+            )
+          : null,
+      body: isPhone
+          ? content
+          : Row(
+              children: [
+                const SideNav(activeRoute: 'dashboard', role: 'tenant'),
+                Expanded(child: content),
+              ],
+            ),
     );
   }
 
@@ -224,9 +249,12 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
     }
 
     final name = _currentUser?.fullName ?? 'Tenant';
+    final width = MediaQuery.sizeOf(context).width;
+    final isPhone = width < 720;
+    final stackPanels = width < 1040;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(isPhone ? 20 : 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -260,7 +288,9 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
           ],
           const SizedBox(height: 20),
           // Action buttons
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: [
               OutlinedButton.icon(
                 onPressed: () => context.go('/tickets/new'),
@@ -284,7 +314,6 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
               ElevatedButton.icon(
                 onPressed: () {},
                 icon: const Icon(Icons.headset_mic_outlined, size: 16),
@@ -312,17 +341,26 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
           ),
           const SizedBox(height: 32),
           // Confirmation Required + Notifications
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 3,
-                child: _buildConfirmationRequired(resolvedTickets),
-              ),
-              const SizedBox(width: 20),
-              Expanded(flex: 2, child: _buildNotifications(_notifications)),
-            ],
-          ),
+          if (stackPanels)
+            Column(
+              children: [
+                _buildConfirmationRequired(resolvedTickets),
+                const SizedBox(height: 20),
+                _buildNotifications(_notifications),
+              ],
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: _buildConfirmationRequired(resolvedTickets),
+                ),
+                const SizedBox(width: 20),
+                Expanded(flex: 2, child: _buildNotifications(_notifications)),
+              ],
+            ),
           const SizedBox(height: 32),
           // Active Tickets table
           _buildActiveTicketsTable(activeTickets),
@@ -666,59 +704,80 @@ class _TenantDashboardScreenState extends State<TenantDashboardScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              // Header row
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                decoration: const BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1),
-                  ),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(flex: 3, child: _headerCell('Title')),
-                    Expanded(flex: 2, child: _headerCell('Category')),
-                    Expanded(flex: 2, child: _headerCell('Status')),
-                    Expanded(flex: 2, child: _headerCell('Action Required')),
-                    Expanded(flex: 2, child: _headerCell('Actions')),
-                  ],
-                ),
-              ),
-              if (tickets.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 32),
-                  child: Center(
-                    child: Text(
-                      'No active tickets',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: const Color(0xFF94A3B8),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final tableWidth = constraints.maxWidth < 760
+                ? 760.0
+                : constraints.maxWidth;
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: tableWidth,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
+                    ],
                   ),
-                )
-              else
-                ...tickets.map((t) => _buildTableRow(t)),
-            ],
-          ),
+                  child: Column(
+                    children: [
+                      // Header row
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Color(0xFFF1F5F9),
+                              width: 1,
+                            ),
+                          ),
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(flex: 3, child: _headerCell('Title')),
+                            Expanded(flex: 2, child: _headerCell('Category')),
+                            Expanded(flex: 2, child: _headerCell('Status')),
+                            Expanded(
+                              flex: 2,
+                              child: _headerCell('Action Required'),
+                            ),
+                            Expanded(flex: 2, child: _headerCell('Actions')),
+                          ],
+                        ),
+                      ),
+                      if (tickets.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 32),
+                          child: Center(
+                            child: Text(
+                              'No active tickets',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: const Color(0xFF94A3B8),
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        ...tickets.map((t) => _buildTableRow(t)),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ],
     );

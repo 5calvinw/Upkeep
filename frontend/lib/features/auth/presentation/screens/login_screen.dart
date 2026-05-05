@@ -149,206 +149,213 @@ class _LoginScreenState extends State<LoginScreen> {
   // ── Shared card ─────────────────────────────────────────────────────────────
 
   Widget _buildCard() {
-    return Container(
-      width: 456,
-      padding: const EdgeInsets.all(36),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1F1E293B),
-            blurRadius: 24,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Welcome back!',
-              style: GoogleFonts.inter(
-                fontSize: 32,
-                fontWeight: FontWeight.w700,
-                color: _navy,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 456),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(36),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1F1E293B),
+              blurRadius: 24,
+              offset: Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Welcome back!',
+                style: GoogleFonts.inter(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  color: _navy,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Please enter your details to sign in.',
-              style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black54),
-            ),
-            const SizedBox(height: 28),
-            _buildFieldLabel('Username'),
-            const SizedBox(height: 6),
-            _buildTextField(
-              controller: _emailController,
-              hint: 'Enter your email',
-              keyboardType: TextInputType.emailAddress,
-              validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Email is required' : null,
-            ),
-            const SizedBox(height: 20),
-            _buildFieldLabel('Password'),
-            const SizedBox(height: 6),
-            _buildTextField(
-              controller: _passwordController,
-              hint: 'Enter your password',
-              obscure: _obscurePassword,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                  size: 18,
-                  color: Colors.black45,
-                ),
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
+              const SizedBox(height: 6),
+              Text(
+                'Please enter your details to sign in.',
+                style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black54),
               ),
-              validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Password is required' : null,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: Checkbox(
-                    value: _rememberMe,
-                    onChanged: (v) => setState(() => _rememberMe = v ?? false),
-                    activeColor: _blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(3),
-                    ),
+              const SizedBox(height: 28),
+              _buildFieldLabel('Username'),
+              const SizedBox(height: 6),
+              _buildTextField(
+                controller: _emailController,
+                hint: 'Enter your email',
+                keyboardType: TextInputType.emailAddress,
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'Email is required' : null,
+              ),
+              const SizedBox(height: 20),
+              _buildFieldLabel('Password'),
+              const SizedBox(height: 6),
+              _buildTextField(
+                controller: _passwordController,
+                hint: 'Enter your password',
+                obscure: _obscurePassword,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    size: 18,
+                    color: Colors.black45,
                   ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
-                const SizedBox(width: 8),
-                Text('Remember me', style: GoogleFonts.dmSans(fontSize: 12)),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () {
-                    // TODO: Navigate to forgot password
-                  },
-                  child: Text(
-                    'Forgot Password?',
-                    style: GoogleFonts.dmSans(fontSize: 12, color: _linkBlue),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _handleLogin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _blue,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        'Log in',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'Password is required' : null,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: Checkbox(
+                      value: _rememberMe,
+                      onChanged: (v) =>
+                          setState(() => _rememberMe = v ?? false),
+                      activeColor: _blue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(3),
                       ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('Remember me', style: GoogleFonts.dmSans(fontSize: 12)),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      // TODO: Navigate to forgot password
+                    },
+                    child: Text(
+                      'Forgot Password?',
+                      style: GoogleFonts.dmSans(fontSize: 12, color: _linkBlue),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                const Expanded(child: Divider(color: Colors.black26)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Text(
-                    'Alternatively, Login with',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 9,
-                      color: Colors.black45,
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleLogin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _blue,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          'Log in',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                 ),
-                const Expanded(child: Divider(color: Colors.black26)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: OutlinedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Google login coming soon')),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: _inputBorder),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.g_mobiledata,
-                      size: 22,
-                      color: Colors.black87,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Log in with Google',
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  const Expanded(child: Divider(color: Colors.black26)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      'Alternatively, Login with',
                       style: GoogleFonts.dmSans(
-                        fontSize: 12,
+                        fontSize: 9,
+                        color: Colors.black45,
+                      ),
+                    ),
+                  ),
+                  const Expanded(child: Divider(color: Colors.black26)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: OutlinedButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Google login coming soon')),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: _inputBorder),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.g_mobiledata,
+                        size: 22,
                         color: Colors.black87,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Text(
+                        'Log in with Google',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: RichText(
-                text: TextSpan(
-                  style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black),
-                  children: [
-                    const TextSpan(text: "Don't have an account?  "),
-                    WidgetSpan(
-                      child: GestureDetector(
-                        onTap: () => context.go('/register'),
-                        child: Text(
-                          'Register Here',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
-                            color: _linkBlue,
+              const SizedBox(height: 20),
+              Center(
+                child: RichText(
+                  text: TextSpan(
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      color: Colors.black,
+                    ),
+                    children: [
+                      const TextSpan(text: "Don't have an account?  "),
+                      WidgetSpan(
+                        child: GestureDetector(
+                          onTap: () => context.go('/register'),
+                          child: Text(
+                            'Register Here',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12,
+                              color: _linkBlue,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -125,36 +125,61 @@ class _ManagerActiveTicketsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final isPhone = MediaQuery.sizeOf(context).width < 720;
+    final content = _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : _error != null
+        ? Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(_error!, style: const TextStyle(color: Colors.red)),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadTickets,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          )
+        : _buildContent();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SideNav(activeRoute: 'tickets', role: 'manager'),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _error!,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _loadTickets,
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  )
-                : _buildContent(),
-          ),
-        ],
-      ),
+      appBar: isPhone
+          ? AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              iconTheme: const IconThemeData(color: _navy),
+              title: Text(
+                'Active Tickets',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _navy,
+                ),
+              ),
+            )
+          : null,
+      drawer: isPhone
+          ? const Drawer(
+              child: SideNav(
+                activeRoute: 'tickets',
+                role: 'manager',
+                isCompactOverride: false,
+              ),
+            )
+          : null,
+      body: isPhone
+          ? content
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SideNav(activeRoute: 'tickets', role: 'manager'),
+                Expanded(child: content),
+              ],
+            ),
     );
   }
 
@@ -162,9 +187,10 @@ class _ManagerActiveTicketsScreenState
     final tickets = _sortedTickets;
 
     final managerName = AuthService.currentUser.value?.fullName ?? 'Manager';
+    final isPhone = MediaQuery.sizeOf(context).width < 720;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(isPhone ? 20 : 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -196,6 +222,7 @@ class _ManagerActiveTicketsScreenState
   }
 
   Widget _buildSortBar() {
+    final isPhone = MediaQuery.sizeOf(context).width < 720;
     const statuses = {
       'all': 'All Statuses',
       'opened': 'Opened',
@@ -211,6 +238,7 @@ class _ManagerActiveTicketsScreenState
     };
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -223,80 +251,100 @@ class _ManagerActiveTicketsScreenState
           ),
         ],
       ),
-      child: Row(
-        children: [
-          // Status filter
-          Text(
-            'Filter:',
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF64748B),
-            ),
-          ),
-          const SizedBox(width: 10),
-          _buildDropdown(
-            value: _filterStatus,
-            items: statuses,
-            onChanged: (v) => setState(() => _filterStatus = v!),
-          ),
-          const SizedBox(width: 24),
-          // Sort by
-          Text(
-            'Sort by:',
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF64748B),
-            ),
-          ),
-          const SizedBox(width: 10),
-          _buildDropdown(
-            value: _sortBy,
-            items: sortOptions,
-            onChanged: (v) => setState(() => _sortBy = v!),
-          ),
-          const SizedBox(width: 10),
-          // Asc / Desc toggle
-          InkWell(
-            borderRadius: BorderRadius.circular(6),
-            onTap: () => setState(() => _sortAsc = !_sortAsc),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(6),
-              ),
+      child: isPhone
+          ? SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  Icon(
-                    _sortAsc ? Icons.arrow_upward : Icons.arrow_downward,
-                    size: 14,
-                    color: _navy,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _sortAsc ? 'Asc' : 'Desc',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: _navy,
-                    ),
-                  ),
+                  _buildControlsGroup(statuses, sortOptions),
+                  const SizedBox(width: 16),
+                  _buildTicketCount(),
                 ],
               ),
+            )
+          : Row(
+              children: [
+                Expanded(child: _buildControlsGroup(statuses, sortOptions)),
+                const SizedBox(width: 12),
+                _buildTicketCount(),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildControlsGroup(
+    Map<String, String> statuses,
+    Map<String, String> sortOptions,
+  ) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Text(
+          'Filter:',
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF64748B),
+          ),
+        ),
+        _buildDropdown(
+          value: _filterStatus,
+          items: statuses,
+          onChanged: (v) => setState(() => _filterStatus = v!),
+        ),
+        Text(
+          'Sort by:',
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF64748B),
+          ),
+        ),
+        _buildDropdown(
+          value: _sortBy,
+          items: sortOptions,
+          onChanged: (v) => setState(() => _sortBy = v!),
+        ),
+        InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: () => setState(() => _sortAsc = !_sortAsc),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _sortAsc ? Icons.arrow_upward : Icons.arrow_downward,
+                  size: 14,
+                  color: _navy,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _sortAsc ? 'Asc' : 'Desc',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _navy,
+                  ),
+                ),
+              ],
             ),
           ),
-          const Spacer(),
-          Text(
-            '${_sortedTickets.length} ticket${_sortedTickets.length == 1 ? '' : 's'}',
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              color: const Color(0xFF94A3B8),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTicketCount() {
+    return Text(
+      '${_sortedTickets.length} ticket${_sortedTickets.length == 1 ? '' : 's'}',
+      style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF94A3B8)),
     );
   }
 
@@ -342,57 +390,75 @@ class _ManagerActiveTicketsScreenState
   }
 
   Widget _buildTable(List<Ticket> tickets) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1),
-              ),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-            ),
-            child: Row(
-              children: [
-                Expanded(flex: 3, child: _headerCell('Title')),
-                Expanded(flex: 1, child: _headerCell('Unit')),
-                Expanded(flex: 2, child: _headerCell('Property')),
-                Expanded(flex: 2, child: _headerCell('Category')),
-                Expanded(flex: 2, child: _headerCell('Status')),
-                Expanded(flex: 2, child: _headerCell('Actions')),
-              ],
-            ),
-          ),
-          if (tickets.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Center(
-                child: Text(
-                  'No active tickets',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: const Color(0xFF94A3B8),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tableWidth = constraints.maxWidth < 840
+            ? 840.0
+            : constraints.maxWidth;
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: tableWidth,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                ),
+                ],
               ),
-            )
-          else
-            ...tickets.map((t) => _buildRow(t)),
-        ],
-      ),
+              child: Column(
+                children: [
+                  // Header
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1),
+                      ),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(12),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(flex: 3, child: _headerCell('Title')),
+                        Expanded(flex: 1, child: _headerCell('Unit')),
+                        Expanded(flex: 2, child: _headerCell('Property')),
+                        Expanded(flex: 2, child: _headerCell('Category')),
+                        Expanded(flex: 2, child: _headerCell('Status')),
+                        Expanded(flex: 2, child: _headerCell('Actions')),
+                      ],
+                    ),
+                  ),
+                  if (tickets.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Center(
+                        child: Text(
+                          'No active tickets',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    ...tickets.map((t) => _buildRow(t)),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

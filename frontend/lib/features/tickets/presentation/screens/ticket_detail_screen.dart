@@ -181,64 +181,106 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isPhone = MediaQuery.sizeOf(context).width < 720;
+    final content = _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : _error != null
+        ? Center(
+            child: Text(_error!, style: const TextStyle(color: Colors.red)),
+          )
+        : _buildContent();
+
     return Scaffold(
       backgroundColor: _bgGray,
-      body: Row(
-        children: [
-          SideNav(activeRoute: 'tickets', role: widget.role),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                ? Center(
-                    child: Text(
-                      _error!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  )
-                : _buildContent(),
-          ),
-        ],
-      ),
+      appBar: isPhone
+          ? AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              iconTheme: const IconThemeData(color: _navy),
+              title: Text(
+                'Ticket Details',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _navy,
+                ),
+              ),
+            )
+          : null,
+      drawer: isPhone
+          ? Drawer(
+              child: SideNav(
+                activeRoute: 'tickets',
+                role: widget.role,
+                isCompactOverride: false,
+              ),
+            )
+          : null,
+      body: isPhone
+          ? content
+          : Row(
+              children: [
+                SideNav(activeRoute: 'tickets', role: widget.role),
+                Expanded(child: content),
+              ],
+            ),
     );
   }
 
   Widget _buildContent() {
     final ticket = _ticket!;
+    final width = MediaQuery.sizeOf(context).width;
+    final isPhone = width < 720;
+    final stackPanels = width < 1180;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(40, 40, 40, 48),
+      padding: EdgeInsets.fromLTRB(40, isPhone ? 24 : 40, 40, 48),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(ticket),
           const SizedBox(height: 24),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Left column: Property details + Description + Attachments
-              SizedBox(
-                width: 300,
-                height: _detailPanelHeight,
-                child: Column(
-                  children: [
-                    _buildPropertyCard(ticket),
-                    const SizedBox(height: 16),
-                    Expanded(child: _buildDescriptionCard(ticket)),
-                  ],
+          if (stackPanels)
+            Column(
+              children: [
+                _buildPropertyCard(ticket),
+                const SizedBox(height: 16),
+                _buildDescriptionCard(ticket),
+                const SizedBox(height: 16),
+                _buildMessageThread(),
+                const SizedBox(height: 16),
+                _buildAuditTrail(),
+              ],
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left column: Property details + Description + Attachments
+                SizedBox(
+                  width: 300,
+                  height: _detailPanelHeight,
+                  child: Column(
+                    children: [
+                      _buildPropertyCard(ticket),
+                      const SizedBox(height: 16),
+                      Expanded(child: _buildDescriptionCard(ticket)),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 24),
-              // Center: Message thread
-              Expanded(child: _buildMessageThread()),
-              const SizedBox(width: 24),
-              // Right: Audit trail
-              SizedBox(
-                width: 281,
-                height: _detailPanelHeight,
-                child: _buildAuditTrail(),
-              ),
-            ],
-          ),
+                const SizedBox(width: 24),
+                // Center: Message thread
+                Expanded(child: _buildMessageThread()),
+                const SizedBox(width: 24),
+                // Right: Audit trail
+                SizedBox(
+                  width: 281,
+                  height: _detailPanelHeight,
+                  child: _buildAuditTrail(),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -259,25 +301,46 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                ticket.title,
-                style: GoogleFonts.inter(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: _navy,
-                ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 760;
+            final title = Text(
+              ticket.title,
+              style: GoogleFonts.inter(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: _navy,
               ),
-            ),
-            // Action buttons
-            if (!ticket.isClosed) ...[
-              _buildEditButton(),
-              const SizedBox(width: 12),
-              _buildActionButton(ticket),
-            ],
-          ],
+            );
+            final actions = [
+              if (!ticket.isClosed) ...[
+                _buildEditButton(),
+                _buildActionButton(ticket),
+              ],
+            ];
+
+            if (isNarrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  title,
+                  if (actions.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Wrap(spacing: 12, runSpacing: 12, children: actions),
+                  ],
+                ],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: title),
+                const SizedBox(width: 12),
+                Wrap(spacing: 12, runSpacing: 12, children: actions),
+              ],
+            );
+          },
         ),
         const SizedBox(height: 12),
         Row(

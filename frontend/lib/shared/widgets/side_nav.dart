@@ -6,11 +6,13 @@ import 'package:frontend/features/auth/data/auth_service.dart';
 class SideNav extends StatelessWidget {
   final String activeRoute;
   final String role;
+  final bool? isCompactOverride;
 
   const SideNav({
     super.key,
     this.activeRoute = 'dashboard',
     this.role = 'tenant',
+    this.isCompactOverride,
   });
 
   static const Color _slate900 = Color(0xFF0F172A);
@@ -20,8 +22,11 @@ class SideNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact =
+        isCompactOverride ?? (MediaQuery.sizeOf(context).width < 720);
+
     return Container(
-      width: 256,
+      width: isCompact ? 73 : 256,
       decoration: const BoxDecoration(
         color: _bgColor,
         border: Border(right: BorderSide(color: _slate200)),
@@ -30,8 +35,16 @@ class SideNav extends StatelessWidget {
         children: [
           // Logo section
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+            padding: EdgeInsets.fromLTRB(
+              isCompact ? 16 : 24,
+              24,
+              isCompact ? 16 : 24,
+              28,
+            ),
             child: Row(
+              mainAxisAlignment: isCompact
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
               children: [
                 Container(
                   width: 40,
@@ -50,29 +63,31 @@ class SideNav extends StatelessWidget {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Upkeep',
-                      style: GoogleFonts.manrope(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: _slate900,
+                if (!isCompact) ...[
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Upkeep',
+                        style: GoogleFonts.manrope(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: _slate900,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'PROPERTY MANAGEMENT',
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: _slate500,
-                        letterSpacing: 1,
+                      Text(
+                        'PROPERTY MANAGEMENT',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: _slate500,
+                          letterSpacing: 1,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -80,13 +95,14 @@ class SideNav extends StatelessWidget {
           // Nav items
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: isCompact ? 10 : 16),
               child: Column(
                 children: [
                   _NavItem(
                     icon: Icons.dashboard_outlined,
                     label: 'Dashboard',
                     isActive: activeRoute == 'dashboard',
+                    isCompact: isCompact,
                     onTap: () => context.go(
                       role == 'manager' ? '/manager/dashboard' : '/dashboard',
                     ),
@@ -96,6 +112,7 @@ class SideNav extends StatelessWidget {
                     icon: Icons.confirmation_number_outlined,
                     label: 'Active Tickets',
                     isActive: activeRoute == 'tickets',
+                    isCompact: isCompact,
                     onTap: () => context.go(
                       role == 'manager' ? '/manager/tickets' : '/dashboard',
                     ),
@@ -105,6 +122,7 @@ class SideNav extends StatelessWidget {
                     icon: Icons.support_agent_outlined,
                     label: 'Support',
                     isActive: activeRoute == 'support',
+                    isCompact: isCompact,
                     onTap: () {},
                   ),
                 ],
@@ -117,13 +135,19 @@ class SideNav extends StatelessWidget {
             decoration: const BoxDecoration(
               border: Border(top: BorderSide(color: _slate200)),
             ),
-            padding: const EdgeInsets.fromLTRB(16, 17, 16, 16),
+            padding: EdgeInsets.fromLTRB(
+              isCompact ? 10 : 16,
+              17,
+              isCompact ? 10 : 16,
+              16,
+            ),
             child: Column(
               children: [
                 _NavItem(
                   icon: Icons.person_outline,
                   label: 'Profile',
                   isActive: false,
+                  isCompact: isCompact,
                   onTap: () {},
                 ),
                 const SizedBox(height: 4),
@@ -131,6 +155,7 @@ class SideNav extends StatelessWidget {
                   icon: Icons.logout,
                   label: 'Sign Out',
                   isActive: false,
+                  isCompact: isCompact,
                   onTap: () async {
                     await AuthService().logout();
                     if (context.mounted) context.go('/login');
@@ -149,18 +174,20 @@ class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isActive;
+  final bool isCompact;
   final VoidCallback onTap;
 
   const _NavItem({
     required this.icon,
     required this.label,
     required this.isActive,
+    this.isCompact = false,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    final item = Material(
       color: isActive ? Colors.white : Colors.transparent,
       borderRadius: BorderRadius.circular(8),
       elevation: isActive ? 1 : 0,
@@ -169,8 +196,14 @@ class _NavItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: isCompact ? 0 : 14,
+            vertical: 12,
+          ),
           child: Row(
+            mainAxisAlignment: isCompact
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
             children: [
               Icon(
                 icon,
@@ -179,21 +212,24 @@ class _NavItem extends StatelessWidget {
                     ? const Color(0xFF0F172A)
                     : const Color(0xFF64748B),
               ),
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                  color: isActive
-                      ? const Color(0xFF0F172A)
-                      : const Color(0xFF64748B),
+              if (!isCompact) ...[
+                const SizedBox(width: 12),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    color: isActive
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFF64748B),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
       ),
     );
+    return isCompact ? Tooltip(message: label, child: item) : item;
   }
 }
