@@ -1,7 +1,12 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:frontend/features/auth/data/auth_service.dart';
+import 'package:frontend/features/auth/presentation/widgets/google_sign_in_button.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,9 +21,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _authService = AuthService();
 
+  StreamSubscription<GoogleSignInAuthenticationEvent>? _googleAuthSubscription;
+
   bool _rememberMe = false;
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
+  bool _isGoogleReady = false;
 
   static const Color _navy = Color(0xFF1E293B);
   static const Color _blue = Color(0xFF2563EB);
@@ -27,10 +36,36 @@ class _LoginScreenState extends State<LoginScreen> {
   static const Color _inputBorder = Color(0xFFCBD5E1);
 
   @override
+  void initState() {
+    super.initState();
+    _googleAuthSubscription = AuthService.googleSignIn.authenticationEvents
+        .listen(
+          _handleGoogleAuthenticationEvent,
+          onError: _handleGoogleAuthenticationError,
+        );
+    unawaited(_initializeGoogleSignIn());
+  }
+
+  @override
   void dispose() {
+    _googleAuthSubscription?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _initializeGoogleSignIn() async {
+    try {
+      await AuthService.initializeGoogleSignIn();
+      if (mounted) {
+        setState(() => _isGoogleReady = AuthService.isGoogleLoginAvailable);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isGoogleReady = false);
+        _showErrorSnackBar('Google login could not be initialized');
+      }
+    }
   }
 
   Future<void> _handleLogin() async {
@@ -44,23 +79,69 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.text,
       );
       if (mounted) {
-        final user = AuthService.currentUser.value;
-        context.go(
-          user?.role == 'manager' ? '/manager/dashboard' : '/dashboard',
-        );
+        _navigateToDashboard();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceFirst('Exception: ', '')),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showErrorSnackBar(e.toString().replaceFirst('Exception: ', ''));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _handleGoogleAuthenticationEvent(
+    GoogleSignInAuthenticationEvent event,
+  ) async {
+    if (event is! GoogleSignInAuthenticationEventSignIn) {
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() => _isGoogleLoading = true);
+
+    try {
+      await _authService.loginWithGoogleAccount(event.user);
+      if (mounted) {
+        _navigateToDashboard();
+      }
+    } on GoogleAccountNotRegisteredException catch (e) {
+      await AuthService.googleSignIn.signOut();
+      if (mounted) {
+        final encodedEmail = Uri.encodeQueryComponent(e.email);
+        context.go('/register?email=$encodedEmail');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar(e.toString().replaceFirst('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
+  }
+
+  void _handleGoogleAuthenticationError(Object error) {
+    if (!mounted) return;
+
+    setState(() => _isGoogleLoading = false);
+    final message = switch (error) {
+      GoogleSignInException(code: GoogleSignInExceptionCode.canceled) =>
+        'Google sign-in was canceled',
+      GoogleSignInException() => error.description ?? 'Google sign-in failed',
+      _ => 'Google sign-in failed',
+    };
+    _showErrorSnackBar(message);
+  }
+
+  void _navigateToDashboard() {
+    final user = AuthService.currentUser.value;
+    context.go(user?.role == 'manager' ? '/manager/dashboard' : '/dashboard');
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   @override
@@ -75,8 +156,6 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
-  // ── Wide layout (tablet / web) ──────────────────────────────────────────────
 
   Widget _buildWideLayout() {
     return Row(
@@ -120,8 +199,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ── Mobile layout ───────────────────────────────────────────────────────────
-
   Widget _buildMobileLayout() {
     return SingleChildScrollView(
       child: Padding(
@@ -145,8 +222,6 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
-  // ── Shared card ─────────────────────────────────────────────────────────────
 
   Widget _buildCard() {
     return ConstrainedBox(
@@ -293,62 +368,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 44,
-                child: OutlinedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Google login coming soon')),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: _inputBorder),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.g_mobiledata,
-                        size: 22,
-                        color: Colors.black87,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Log in with Google',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 12,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _buildGoogleLoginSection(),
               const SizedBox(height: 20),
               Center(
                 child: RichText(
                   text: TextSpan(
                     style: GoogleFonts.dmSans(
                       fontSize: 12,
-                      color: Colors.black,
+                      color: Colors.grey,
                     ),
                     children: [
-                      const TextSpan(text: "Don't have an account?  "),
-                      WidgetSpan(
-                        child: GestureDetector(
-                          onTap: () => context.go('/register'),
-                          child: Text(
-                            'Register Here',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 12,
-                              color: _linkBlue,
-                            ),
-                          ),
-                        ),
+                      const TextSpan(
+                        text: "Ask your property manager for registration",
                       ),
                     ],
                   ),
@@ -356,6 +387,60 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoogleLoginSection() {
+    if (_isGoogleLoading) {
+      return const SizedBox(
+        width: double.infinity,
+        height: 44,
+        child: Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    if (_isGoogleReady && kIsWeb) {
+      return SizedBox(
+        width: double.infinity,
+        height: 44,
+        child: const GoogleSignInWebButton(),
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      height: 44,
+      child: OutlinedButton(
+        onPressed: null,
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: _inputBorder),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.g_mobiledata, size: 22, color: Colors.black54),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                AuthService.isGoogleLoginAvailable
+                    ? 'Google login is only available on web'
+                    : 'Google login is not configured',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black54),
+              ),
+            ),
+          ],
         ),
       ),
     );

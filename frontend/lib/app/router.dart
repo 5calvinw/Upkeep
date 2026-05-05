@@ -48,8 +48,10 @@ final appRouter = GoRouter(
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(
       path: '/register',
-      builder: (context, state) =>
-          RegisterScreen(inviteToken: state.uri.queryParameters['token']),
+      builder: (context, state) => RegisterScreen(
+        inviteToken: state.uri.queryParameters['token'],
+        prefilledEmail: state.uri.queryParameters['email'],
+      ),
     ),
     GoRoute(
       path: '/unauthorized',

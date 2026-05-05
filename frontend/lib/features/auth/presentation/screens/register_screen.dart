@@ -5,8 +5,9 @@ import 'package:frontend/features/auth/data/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   final String? inviteToken;
+  final String? prefilledEmail;
 
-  const RegisterScreen({super.key, this.inviteToken});
+  const RegisterScreen({super.key, this.inviteToken, this.prefilledEmail});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -28,6 +29,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   static const Color _blue = Color(0xFF2563EB);
   static const Color _red = Color(0xFFD00000);
   static const Color _inputBorder = Color(0xFFCBD5E1);
+
+  bool get _hasPrefilledEmail =>
+      widget.prefilledEmail != null && widget.prefilledEmail!.trim().isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_hasPrefilledEmail) {
+      _emailController.text = widget.prefilledEmail!.trim();
+    }
+  }
 
   @override
   void dispose() {
@@ -100,7 +112,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'This registration link is missing or invalid.\nPlease contact your property manager.',
+                    _hasPrefilledEmail
+                        ? 'Your Google account is not registered yet.\nAsk your property manager for an invite link to finish sign-up as ${widget.prefilledEmail}.'
+                        : 'This registration link is missing or invalid.\nPlease contact your property manager.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.dmSans(
                       fontSize: 14,
@@ -237,6 +251,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 'Complete your registration to get started.',
                 style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black54),
               ),
+              if (_hasPrefilledEmail) ...[
+                const SizedBox(height: 10),
+                Text(
+                  'We prefilled your Google email. Complete the invite registration to activate your account.',
+                  style: GoogleFonts.dmSans(fontSize: 12, color: _blue),
+                ),
+              ],
               const SizedBox(height: 28),
               _buildFieldLabel('Full Name'),
               const SizedBox(height: 6),
@@ -253,6 +274,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               _buildTextField(
                 controller: _emailController,
                 hint: 'Enter your email',
+                readOnly: _hasPrefilledEmail,
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) =>
                     (v == null || v.isEmpty) ? 'Email is required' : null,
@@ -382,6 +404,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required TextEditingController controller,
     required String hint,
     bool obscure = false,
+    bool readOnly = false,
     Widget? suffixIcon,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
@@ -389,6 +412,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return TextFormField(
       controller: controller,
       obscureText: obscure,
+      readOnly: readOnly,
       keyboardType: keyboardType,
       validator: validator,
       style: GoogleFonts.inter(fontSize: 13),
