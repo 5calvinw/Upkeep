@@ -214,6 +214,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
       body: isPhone
           ? content
           : Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SideNav(activeRoute: 'dashboard', role: 'manager'),
                 Expanded(child: content),
