@@ -44,6 +44,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   static const Color _bgGray = Color(0xFFF8FAFC);
   static const double _detailPanelHeight = 593;
 
+  bool get _canUseOwnerControls {
+    if (widget.role == 'manager') return true;
+    return _ticket != null &&
+        _currentUser != null &&
+        _ticket!.tenantId == _currentUser!.id;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -313,7 +320,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               ),
             );
             final actions = [
-              if (!ticket.isClosed) ...[
+              if (!ticket.isClosed && _canUseOwnerControls) ...[
                 _buildEditButton(),
                 _buildActionButton(ticket),
               ],
