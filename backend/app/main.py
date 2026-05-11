@@ -48,6 +48,24 @@ def ensure_ticket_photo_urls_schema() -> None:
 
 ensure_ticket_photo_urls_schema()
 
+
+def ensure_ticket_privacy_schema() -> None:
+    inspector = inspect(engine)
+    columns = {column["name"] for column in inspector.get_columns("maintenancerequest")}
+    if "is_private" in columns:
+        return
+
+    with engine.begin() as connection:
+        if connection.dialect.name == "postgresql":
+            connection.execute(text("ALTER TABLE maintenancerequest ADD COLUMN is_private BOOLEAN DEFAULT FALSE"))
+            connection.execute(text("UPDATE maintenancerequest SET is_private = FALSE WHERE is_private IS NULL"))
+            connection.execute(text("ALTER TABLE maintenancerequest ALTER COLUMN is_private SET NOT NULL"))
+        else:
+            connection.execute(text("ALTER TABLE maintenancerequest ADD COLUMN is_private BOOLEAN DEFAULT 0 NOT NULL"))
+
+
+ensure_ticket_privacy_schema()
+
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 

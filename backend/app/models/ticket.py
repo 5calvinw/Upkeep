@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, String, Text, Enum, ForeignKey, JSON
+from sqlalchemy import Boolean, Column, String, Text, Enum, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from app.db.base_class import Base, TimestampMixin
 
@@ -34,6 +34,7 @@ class MaintenanceRequest(Base, TimestampMixin):
     status = Column(Enum(TicketStatus), default=TicketStatus.OPENED, nullable=False, index=True)
     photo_url = Column(String(512), nullable=True)
     photo_urls = Column(JSON, nullable=False, default=list)
+    is_private = Column(Boolean, nullable=False, default=False)
 
     tenant_id = Column(ForeignKey("user.id", ondelete="RESTRICT"), nullable=False, index=True)
     unit_id = Column(ForeignKey("propertyunit.id", ondelete="RESTRICT"), nullable=False, index=True)

@@ -10,6 +10,7 @@ class TicketCreate(BaseModel):
     category: TicketCategory
     urgency: TicketUrgency
     photo_urls: list[str] = Field(default_factory=list)
+    is_private: bool = False
 
 
 class TicketStatusUpdate(BaseModel):
@@ -26,6 +27,7 @@ class TicketOut(BaseModel):
     status: TicketStatus
     photo_url: str | None = None
     photo_urls: list[str] = Field(default_factory=list)
+    is_private: bool = False
     tenant_id: UUID
     unit_id: UUID
     created_at: datetime
