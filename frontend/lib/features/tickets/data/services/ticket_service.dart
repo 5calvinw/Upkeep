@@ -122,6 +122,20 @@ class TicketService {
     );
   }
 
+  Future<List<Ticket>> listActiveTickets() async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/tickets/active'),
+      headers: await _headers(),
+    );
+    if (response.statusCode == 200) {
+      final list = jsonDecode(response.body) as List;
+      return list.map((e) => Ticket.fromJson(e)).toList();
+    }
+    throw Exception(
+      jsonDecode(response.body)['detail'] ?? 'Failed to load active tickets',
+    );
+  }
+
   Future<String> uploadPhoto(Uint8List bytes, String filename) async {
     final token = await _authService.getToken();
     final request = http.MultipartRequest(
@@ -146,6 +160,7 @@ class TicketService {
     required String category,
     required String urgency,
     List<String> photoUrls = const [],
+    bool isPrivate = false,
   }) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/tickets'),
@@ -156,6 +171,7 @@ class TicketService {
         'category': category,
         'urgency': urgency,
         'photo_urls': photoUrls,
+        'is_private': isPrivate,
       }),
     );
     if (response.statusCode == 201 || response.statusCode == 200) {

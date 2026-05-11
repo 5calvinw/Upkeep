@@ -4,6 +4,7 @@ import 'package:frontend/features/auth/presentation/screens/login_screen.dart';
 import 'package:frontend/features/auth/presentation/screens/register_screen.dart';
 import 'package:frontend/features/auth/presentation/screens/unauthorized_screen.dart';
 import 'package:frontend/features/tickets/presentation/screens/ticket_detail_screen.dart';
+import 'package:frontend/features/tickets/presentation/screens/tenant_active_tickets_screen.dart';
 import 'package:frontend/features/tickets/presentation/screens/tenant_dashboard_screen.dart';
 import 'package:frontend/features/tickets/presentation/screens/new_ticket_screen.dart';
 import 'package:frontend/features/tickets/presentation/screens/manager_dashboard_screen.dart';
@@ -37,6 +38,7 @@ final appRouter = GoRouter(
     }
     if (user.role == 'manager' &&
         (path == '/dashboard' ||
+            path == '/tickets' ||
             path == '/tickets/new' ||
             path.startsWith('/tickets/'))) {
       return '/manager/dashboard';
@@ -65,6 +67,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/tickets/new',
       builder: (context, state) => const NewTicketScreen(),
+    ),
+    GoRoute(
+      path: '/tickets',
+      builder: (context, state) => const TenantActiveTicketsScreen(),
     ),
     GoRoute(
       path: '/tickets/:id',

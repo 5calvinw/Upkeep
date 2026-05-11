@@ -6,6 +6,7 @@ class Ticket {
   final String urgency;
   final String status;
   final List<String> photoUrls;
+  final bool isPrivate;
   final String tenantId;
   final String unitId;
   final String tenantName;
@@ -22,6 +23,7 @@ class Ticket {
     required this.urgency,
     required this.status,
     this.photoUrls = const [],
+    this.isPrivate = false,
     required this.tenantId,
     required this.unitId,
     this.tenantName = '',
@@ -46,6 +48,7 @@ class Ticket {
           (json['photo_url'] != null
               ? [json['photo_url'].toString()]
               : const []),
+      isPrivate: json['is_private'] == true,
       tenantId: json['tenant_id']?.toString() ?? '',
       unitId: json['unit_id']?.toString() ?? '',
       tenantName: json['tenant_name']?.toString() ?? '',

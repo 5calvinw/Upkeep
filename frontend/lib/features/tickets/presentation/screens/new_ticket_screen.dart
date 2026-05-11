@@ -105,6 +105,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
         category: _selectedCategory,
         urgency: _isUrgent ? 'urgent' : 'normal',
         photoUrls: uploadedUrls,
+        isPrivate: _isPrivate,
       );
       if (mounted) context.go('/tickets/${ticket.id}');
     } catch (e) {
@@ -302,18 +303,23 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                     children: [
                       _buildCheckboxWithLabel(
                         value: _isPrivate,
-                        onChanged: (v) => setState(() => _isPrivate = v ?? false),
+                        onChanged: (v) =>
+                            setState(() => _isPrivate = v ?? false),
                         label: 'Make my ticket private',
                       ),
                       _buildCheckboxWithLabel(
                         value: _isUrgent,
-                        onChanged: (v) => setState(() => _isUrgent = v ?? false),
+                        onChanged: (v) =>
+                            setState(() => _isUrgent = v ?? false),
                         label: 'Urgent',
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Align(alignment: Alignment.centerRight, child: _buildSubmitButton()),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _buildSubmitButton(),
+                  ),
                 ],
               )
             else
@@ -327,12 +333,14 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                       children: [
                         _buildCheckboxWithLabel(
                           value: _isPrivate,
-                          onChanged: (v) => setState(() => _isPrivate = v ?? false),
+                          onChanged: (v) =>
+                              setState(() => _isPrivate = v ?? false),
                           label: 'Make my ticket private',
                         ),
                         _buildCheckboxWithLabel(
                           value: _isUrgent,
-                          onChanged: (v) => setState(() => _isUrgent = v ?? false),
+                          onChanged: (v) =>
+                              setState(() => _isUrgent = v ?? false),
                           label: 'Urgent',
                         ),
                       ],
@@ -362,12 +370,17 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
           child: Checkbox(
             value: value,
             onChanged: onChanged,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(3),
+            ),
             activeColor: _navy,
           ),
         ),
         const SizedBox(width: 8),
-        Text(label, style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black)),
+        Text(
+          label,
+          style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black),
+        ),
       ],
     );
   }
@@ -388,11 +401,17 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
             ? const SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               )
             : Text(
                 'Submit',
-                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500),
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
       ),
     );
@@ -450,7 +469,10 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                   Expanded(
                     child: Text(
                       _selectedCategoryLabel(),
-                      style: GoogleFonts.inter(fontSize: 13, color: Colors.black87),
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: Colors.black87,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

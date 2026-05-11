@@ -1,9 +1,11 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_db, get_current_user, require_manager, require_tenant
+from app.models.property import PropertyUnit
 from app.models.ticket import MaintenanceRequest, TicketStatus
 from app.models.audit_log import AuditLog
 from app.models.message import Message
@@ -43,6 +45,7 @@ def _ticket_to_detail(ticket: MaintenanceRequest) -> dict:
         "status": ticket.status,
         "photo_url": photo_urls[0] if photo_urls else None,
         "photo_urls": photo_urls,
+        "is_private": ticket.is_private,
         "tenant_id": ticket.tenant_id,
         "unit_id": ticket.unit_id,
         "created_at": ticket.created_at,
@@ -52,6 +55,38 @@ def _ticket_to_detail(ticket: MaintenanceRequest) -> dict:
         "property_name": ticket.unit.property.name if ticket.unit and ticket.unit.property else "",
     }
     return data
+
+
+def _tenant_property_id(db: Session, tenant: User):
+    if tenant.unit_id is None:
+        return None
+
+    unit = db.get(PropertyUnit, tenant.unit_id)
+    return unit.property_id if unit else None
+
+
+def _tenant_can_view_ticket(db: Session, ticket: MaintenanceRequest, tenant: User) -> bool:
+    if ticket.tenant_id == tenant.id:
+        return True
+
+    property_id = _tenant_property_id(db, tenant)
+    if property_id is None or ticket.is_private or ticket.unit is None:
+        return False
+
+    return ticket.unit.property_id == property_id
+
+
+def _ensure_ticket_visible_to_user(
+    db: Session,
+    ticket: MaintenanceRequest,
+    current_user: User,
+) -> None:
+    if current_user.role == UserRole.TENANT and not _tenant_can_view_ticket(
+        db,
+        ticket,
+        current_user,
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
 
 @router.post("", response_model=TicketOut, status_code=status.HTTP_201_CREATED)
@@ -70,6 +105,7 @@ def create_ticket(
         urgency=body.urgency,
         photo_url=body.photo_urls[0] if body.photo_urls else None,
         photo_urls=body.photo_urls,
+        is_private=body.is_private,
         tenant_id=current_user.id,
         unit_id=current_user.unit_id,
     )
@@ -103,6 +139,41 @@ def list_tickets(
     return [_ticket_to_detail(t) for t in tickets]
 
 
+@router.get("/active", response_model=list[TicketDetailOut])
+def list_active_tickets(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role == UserRole.TENANT:
+        property_id = _tenant_property_id(db, current_user)
+        if property_id is None:
+            return []
+
+        tickets = (
+            db.query(MaintenanceRequest)
+            .join(MaintenanceRequest.unit)
+            .filter(
+                MaintenanceRequest.status != TicketStatus.CLOSED,
+                PropertyUnit.property_id == property_id,
+                or_(
+                    MaintenanceRequest.tenant_id == current_user.id,
+                    MaintenanceRequest.is_private.is_(False),
+                ),
+            )
+            .order_by(MaintenanceRequest.created_at.desc())
+            .all()
+        )
+    else:
+        tickets = (
+            db.query(MaintenanceRequest)
+            .filter(MaintenanceRequest.status != TicketStatus.CLOSED)
+            .order_by(MaintenanceRequest.created_at.desc())
+            .all()
+        )
+
+    return [_ticket_to_detail(t) for t in tickets]
+
+
 @router.get("/{ticket_id}", response_model=TicketDetailOut)
 def get_ticket(
     ticket_id: UUID,
@@ -113,9 +184,7 @@ def get_ticket(
     if ticket is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
 
-    # Tenants can only view their own tickets
-    if current_user.role == UserRole.TENANT and ticket.tenant_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    _ensure_ticket_visible_to_user(db, ticket, current_user)
 
     return _ticket_to_detail(ticket)
 
@@ -148,7 +217,7 @@ def advance_status(
             detail=f"Only a {required_role.value} can perform this transition",
         )
 
-    # Tenants can only act on their own tickets
+    # Tenants can only act on their own tickets, even when shared tickets are visible.
     if current_user.role == UserRole.TENANT and ticket.tenant_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
@@ -178,8 +247,7 @@ def get_audit_log(
     if ticket is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
 
-    if current_user.role == UserRole.TENANT and ticket.tenant_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    _ensure_ticket_visible_to_user(db, ticket, current_user)
 
     logs = (
         db.query(AuditLog)
@@ -211,8 +279,7 @@ def list_messages(
     if ticket is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
 
-    if current_user.role == UserRole.TENANT and ticket.tenant_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    _ensure_ticket_visible_to_user(db, ticket, current_user)
 
     messages = (
         db.query(Message)
@@ -244,8 +311,7 @@ def create_message(
     if ticket is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
 
-    if current_user.role == UserRole.TENANT and ticket.tenant_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    _ensure_ticket_visible_to_user(db, ticket, current_user)
 
     msg = Message(
         content=body.content,

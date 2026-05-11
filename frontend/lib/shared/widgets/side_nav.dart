@@ -114,7 +114,7 @@ class SideNav extends StatelessWidget {
                     isActive: activeRoute == 'tickets',
                     isCompact: isCompact,
                     onTap: () => context.go(
-                      role == 'manager' ? '/manager/tickets' : '/dashboard',
+                      role == 'manager' ? '/manager/tickets' : '/tickets',
                     ),
                   ),
                   const SizedBox(height: 4),
