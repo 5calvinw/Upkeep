@@ -9,6 +9,8 @@
 .env
 context
 AGENTS.md
+sprint3.md
+sprint3-plan.md
 venv/
 __pycache__/
 backend/venv
