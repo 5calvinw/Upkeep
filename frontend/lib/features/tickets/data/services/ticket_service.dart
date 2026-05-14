@@ -97,6 +97,23 @@ class TicketService {
     );
   }
 
+  Future<Ticket> rejectResolution(String ticketId, {String? note}) {
+    return advanceStatus(ticketId, 'in_progress', note: note);
+  }
+
+  Future<TicketAnalyticsSummary> getManagerAnalytics() async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/tickets/analytics/summary'),
+      headers: await _headers(),
+    );
+    if (response.statusCode == 200) {
+      return TicketAnalyticsSummary.fromJson(jsonDecode(response.body));
+    }
+    throw Exception(
+      jsonDecode(response.body)['detail'] ?? 'Failed to load analytics',
+    );
+  }
+
   Future<UserInfo> getCurrentUser() async {
     final response = await http.get(
       Uri.parse('$_baseUrl/users/me'),
