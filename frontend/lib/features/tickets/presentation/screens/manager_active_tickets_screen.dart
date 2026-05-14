@@ -434,6 +434,7 @@ class _ManagerActiveTicketsScreenState
                         Expanded(flex: 2, child: _headerCell('Property')),
                         Expanded(flex: 2, child: _headerCell('Category')),
                         Expanded(flex: 2, child: _headerCell('Status')),
+                        Expanded(flex: 2, child: _headerCell('SLA')),
                         Expanded(flex: 2, child: _headerCell('Actions')),
                       ],
                     ),
@@ -552,6 +553,13 @@ class _ManagerActiveTicketsScreenState
                 child: _buildStatusBadge(ticket.status),
               ),
             ),
+            Expanded(
+              flex: 2,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: _buildSlaBadge(ticket.slaStatus),
+              ),
+            ),
             // Actions
             Expanded(
               flex: 2,
@@ -623,6 +631,36 @@ class _ManagerActiveTicketsScreenState
           fontWeight: FontWeight.w600,
           color: entry[1] as Color,
         ),
+      ),
+    );
+  }
+
+  Widget _buildSlaBadge(String status) {
+    final map = <String, List<dynamic>>{
+      'On Track': [const Color(0xFFDCFCE7), const Color(0xFF166534)],
+      'Approaching SLA Limit': [
+        const Color(0xFFFEF3C7),
+        const Color(0xFF92400E),
+      ],
+      'SLA Breached': [const Color(0xFFFEE2E2), const Color(0xFF991B1B)],
+      'Resolved Late': [const Color(0xFFFFEDD5), const Color(0xFF9A3412)],
+    };
+    final entry =
+        map[status] ?? [const Color(0xFFF1F5F9), const Color(0xFF475569)];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: entry[0] as Color,
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Text(
+        status,
+        style: GoogleFonts.inter(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: entry[1] as Color,
+        ),
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

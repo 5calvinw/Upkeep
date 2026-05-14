@@ -51,6 +51,26 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         _ticket!.tenantId == _currentUser!.id;
   }
 
+  bool get _canAdvanceStatus {
+    if (_ticket == null || _ticket!.isClosed) return false;
+    if (widget.role == 'manager') {
+      return _ticket!.status == 'opened' ||
+          _ticket!.status == 'acknowledged' ||
+          _ticket!.status == 'in_progress';
+    }
+    return _currentUser != null &&
+        _ticket!.tenantId == _currentUser!.id &&
+        _ticket!.status == 'resolved';
+  }
+
+  bool get _canRejectResolution {
+    return widget.role == 'tenant' &&
+        _ticket != null &&
+        _currentUser != null &&
+        _ticket!.tenantId == _currentUser!.id &&
+        _ticket!.status == 'resolved';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -161,7 +181,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   }
 
   Future<void> _advanceStatus() async {
-    if (_ticket == null || _ticket!.isClosed) return;
+    if (!_canAdvanceStatus || _ticket == null) return;
 
     try {
       await _ticketService.advanceStatus(widget.ticketId, _ticket!.nextStatus);
@@ -176,6 +196,64 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         );
       }
     }
+  }
+
+  Future<void> _rejectResolution() async {
+    if (!_canRejectResolution) return;
+
+    final note = await _showRejectResolutionDialog();
+    if (note == null) return;
+
+    try {
+      await _ticketService.rejectResolution(widget.ticketId, note: note);
+      await _loadData();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<String?> _showRejectResolutionDialog() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            'Reject resolution',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+          ),
+          content: TextField(
+            controller: controller,
+            minLines: 3,
+            maxLines: 5,
+            decoration: const InputDecoration(
+              hintText: 'Tell the manager what still needs attention',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop(controller.text.trim());
+              },
+              child: const Text('Send back'),
+            ),
+          ],
+        );
+      },
+    );
+    controller.dispose();
+    return result;
   }
 
   String _formatDate(DateTime dt) {
@@ -320,10 +398,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               ),
             );
             final actions = [
-              if (!ticket.isClosed && _canUseOwnerControls) ...[
-                _buildEditButton(),
-                _buildActionButton(ticket),
-              ],
+              if (!ticket.isClosed && _canUseOwnerControls) _buildEditButton(),
+              if (_canRejectResolution) _buildRejectButton(),
+              if (_canAdvanceStatus) _buildActionButton(ticket),
             ];
 
             if (isNarrow) {
@@ -350,11 +427,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           },
         ),
         const SizedBox(height: 12),
-        Row(
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
           children: [
             _buildUrgencyBadge(ticket),
-            const SizedBox(width: 12),
             _buildStatusBadge(ticket),
+            _buildSlaBadge(ticket.slaStatus),
           ],
         ),
       ],
@@ -433,6 +512,44 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     );
   }
 
+  Widget _buildRejectButton() {
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEE2E2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: _rejectResolution,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.undo_outlined,
+                  size: 13,
+                  color: Color(0xFF991B1B),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Reject Resolution',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF991B1B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildUrgencyBadge(Ticket ticket) {
     Color bgColor;
     Color textColor;
@@ -499,6 +616,43 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF5B697F),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSlaBadge(String status) {
+    final map = <String, List<dynamic>>{
+      'On Track': [const Color(0xFFDCFCE7), const Color(0xFF166534)],
+      'Approaching SLA Limit': [
+        const Color(0xFFFEF3C7),
+        const Color(0xFF92400E),
+      ],
+      'SLA Breached': [const Color(0xFFFEE2E2), const Color(0xFF991B1B)],
+      'Resolved Late': [const Color(0xFFFFEDD5), const Color(0xFF9A3412)],
+    };
+    final entry =
+        map[status] ?? [const Color(0xFFF1F5F9), const Color(0xFF475569)];
+    return Container(
+      height: 30,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: entry[0] as Color,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.timer_outlined, size: 12, color: entry[1] as Color),
+          const SizedBox(width: 6),
+          Text(
+            status,
+            style: GoogleFonts.dmSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: entry[1] as Color,
             ),
           ),
         ],
@@ -660,6 +814,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            _buildTimingSummary(ticket),
+            const SizedBox(height: 24),
             Text(
               'Attachments (${ticket.photoUrls.length})',
               style: GoogleFonts.inter(
@@ -719,6 +875,76 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTimingSummary(Ticket ticket) {
+    final rows = <MapEntry<String, String?>>[
+      MapEntry('Response time', ticket.responseTimeLabel),
+      MapEntry('Resolution time', ticket.resolutionTimeLabel),
+      MapEntry('Closure time', ticket.closureTimeLabel),
+    ].where((entry) => entry.value != null).toList();
+
+    if (rows.isEmpty && !ticket.isRecurringIssue) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Service Metrics',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: _navy,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...rows.map(
+            (entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      entry.key,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    entry.value!,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: _navy,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (ticket.isRecurringIssue && ticket.recurringIssueMessage != null)
+            Text(
+              ticket.recurringIssueMessage!,
+              style: GoogleFonts.dmSans(
+                fontSize: 12,
+                height: 1.4,
+                color: const Color(0xFF92400E),
+              ),
+            ),
+        ],
       ),
     );
   }
