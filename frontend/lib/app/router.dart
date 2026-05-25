@@ -10,6 +10,7 @@ import 'package:frontend/features/tickets/presentation/screens/new_ticket_screen
 import 'package:frontend/features/tickets/presentation/screens/manager_dashboard_screen.dart';
 import 'package:frontend/features/tickets/presentation/screens/manager_ticket_detail_screen.dart';
 import 'package:frontend/features/tickets/presentation/screens/manager_active_tickets_screen.dart';
+import 'package:frontend/features/tickets/presentation/screens/manager_analytics_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/login',
@@ -85,6 +86,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/manager/tickets',
       builder: (context, state) => const ManagerActiveTicketsScreen(),
+    ),
+    GoRoute(
+      path: '/manager/analytics',
+      builder: (context, state) => const ManagerAnalyticsScreen(),
     ),
     GoRoute(
       path: '/manager/tickets/:id',

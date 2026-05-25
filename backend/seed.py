@@ -40,24 +40,56 @@ def seed():
     db = SessionLocal()
 
     try:
-        # Check if already seeded
+        # Check if already seeded — fill in missing properties/units
         existing_manager = db.query(User).filter(User.email == "manager@upkeep.com").first()
         if existing_manager:
-            existing_unit = db.query(PropertyUnit).filter(PropertyUnit.unit_number == "402A").first()
-            if existing_unit is None:
-                print("Database already seeded, but unit 402A not found. No invite token generated.")
-                return
+            properties_seeded = []
+            units_seeded = []
 
-            invite_token = create_invite_token(existing_unit.id)
-            hard_seeded_token = create_hard_seeded_invite_token(existing_unit.id)
-            invite_url = f"http://localhost:3000/register?token={invite_token}"
-            hard_seeded_url = f"http://localhost:3000/register?token={hard_seeded_token}"
+            def ensure_property(name, address):
+                prop = db.query(Property).filter(
+                    Property.name == name, Property.manager_id == existing_manager.id
+                ).first()
+                if prop is None:
+                    prop = Property(name=name, address=address, manager_id=existing_manager.id)
+                    db.add(prop)
+                    db.flush()
+                    print(f"  + Added property: {name}")
+                return prop
 
-            print("Database already seeded. Generated tokens for unit 402A:")
-            print(f"  Fresh Invite Token: {invite_token}")
-            print(f"  Fresh Register URL: {invite_url}")
-            print(f"  Hard Invite Token:  {hard_seeded_token}")
-            print(f"  Hard Register URL:  {hard_seeded_url}")
+            def ensure_unit(property_id, unit_number):
+                unit = db.query(PropertyUnit).filter(
+                    PropertyUnit.property_id == property_id,
+                    PropertyUnit.unit_number == unit_number,
+                ).first()
+                if unit is None:
+                    unit = PropertyUnit(unit_number=unit_number, property_id=property_id)
+                    db.add(unit)
+                    db.flush()
+                    print(f"    + Added unit: {unit_number}")
+                return unit
+
+            p1 = ensure_property("Silkwood Apartments", "123 Elm Street, Jakarta")
+            p2 = ensure_property("Greenfield Residences", "45 Maple Avenue, Bandung")
+            p3 = ensure_property("The Pinnacle Tower", "88 Skyline Drive, Surabaya")
+            u1 = ensure_unit(p1.id, "402A")
+            u2 = ensure_unit(p2.id, "12B")
+            u3 = ensure_unit(p3.id, "501")
+            db.commit()
+
+            all_units = [u1, u2, u3]
+            all_labels = [
+                f"{p1.name} — Unit {u1.unit_number}",
+                f"{p2.name} — Unit {u2.unit_number}",
+                f"{p3.name} — Unit {u3.unit_number}",
+            ]
+            print("Database already seeded. Generated invite tokens:")
+            for u, label in zip(all_units, all_labels):
+                fresh = create_invite_token(u.id)
+                hard = create_hard_seeded_invite_token(u.id)
+                print(f"  {label}:")
+                print(f"    Fresh: {fresh}")
+                print(f"    Hard:  {hard}")
             return
 
         # ── Users ──────────────────────────────────────────────────────────
@@ -70,20 +102,44 @@ def seed():
         db.add(manager)
         db.flush()
 
-        # ── Property + Unit ────────────────────────────────────────────────
-        prop = Property(
+        # ── Properties + Units ──────────────────────────────────────────────
+        prop1 = Property(
             name="Silkwood Apartments",
             address="123 Elm Street, Jakarta",
             manager_id=manager.id,
         )
-        db.add(prop)
+        db.add(prop1)
         db.flush()
 
-        unit = PropertyUnit(
-            unit_number="402A",
-            property_id=prop.id,
+        prop2 = Property(
+            name="Greenfield Residences",
+            address="45 Maple Avenue, Bandung",
+            manager_id=manager.id,
         )
-        db.add(unit)
+        db.add(prop2)
+        db.flush()
+
+        prop3 = Property(
+            name="The Pinnacle Tower",
+            address="88 Skyline Drive, Surabaya",
+            manager_id=manager.id,
+        )
+        db.add(prop3)
+        db.flush()
+
+        unit1 = PropertyUnit(
+            unit_number="402A",
+            property_id=prop1.id,
+        )
+        unit2 = PropertyUnit(
+            unit_number="12B",
+            property_id=prop2.id,
+        )
+        unit3 = PropertyUnit(
+            unit_number="501",
+            property_id=prop3.id,
+        )
+        db.add_all([unit1, unit2, unit3])
         db.flush()
 
         tenant = User(
@@ -91,7 +147,7 @@ def seed():
             hashed_password=hash_password("password123"),
             full_name="Calvin Wu",
             role=UserRole.TENANT,
-            unit_id=unit.id,
+            unit_id=unit1.id,
         )
         db.add(tenant)
         db.flush()
@@ -112,7 +168,7 @@ def seed():
             urgency=TicketUrgency.URGENT,
             status=TicketStatus.ACKNOWLEDGED,
             tenant_id=tenant.id,
-            unit_id=unit.id,
+            unit_id=unit1.id,
         )
         db.add(ticket)
         db.flush()
@@ -157,20 +213,33 @@ def seed():
         db.add_all([msg1, msg2, msg3, msg4])
 
         db.commit()
-        invite_token = create_invite_token(unit.id)
-        hard_seeded_token = create_hard_seeded_invite_token(unit.id)
-        invite_url = f"http://localhost:3000/register?token={invite_token}"
-        hard_seeded_url = f"http://localhost:3000/register?token={hard_seeded_token}"
+
+        invite_urls = []
+        hard_invite_urls = []
+        for u, label in [
+            (unit1, f"{prop1.name} — Unit {unit1.unit_number}"),
+            (unit2, f"{prop2.name} — Unit {unit2.unit_number}"),
+            (unit3, f"{prop3.name} — Unit {unit3.unit_number}"),
+        ]:
+            tok = create_invite_token(u.id)
+            hard_tok = create_hard_seeded_invite_token(u.id)
+            invite_urls.append((label, tok, f"http://localhost:3000/register?token={tok}"))
+            hard_invite_urls.append((label, hard_tok, f"http://localhost:3000/register?token={hard_tok}"))
 
         print("Seeded successfully!")
         print()
         print(f"  Manager:  manager@upkeep.com / password123")
         print(f"  Tenant:   calvin@upkeep.com  / password123")
         print(f"  Ticket ID: {ticket.id}")
-        print(f"  Fresh Invite Token: {invite_token}")
-        print(f"  Fresh Register URL: {invite_url}")
-        print(f"  Hard Invite Token:  {hard_seeded_token}")
-        print(f"  Hard Register URL:  {hard_seeded_url}")
+        print(f"  Properties: Silkwood Apartments, Greenfield Residences, The Pinnacle Tower")
+        print()
+        print("  Fresh Invite Tokens:")
+        for label, tok, url in invite_urls:
+            print(f"    {label}: {tok}")
+        print()
+        print("  Hard-Seeded Invite Tokens:")
+        for label, tok, url in hard_invite_urls:
+            print(f"    {label}: {tok}")
         print()
         print(f"  Visit: /tickets/{ticket.id}")
 

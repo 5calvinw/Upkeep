@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:frontend/features/auth/data/auth_service.dart';
 import 'package:frontend/features/tickets/data/models/ticket.dart';
 import 'package:frontend/features/tickets/data/services/ticket_service.dart';
 import 'package:frontend/shared/widgets/side_nav.dart';
@@ -36,14 +35,16 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   List<_NotificationItem> _notifications = [];
   bool _isLoading = true;
   String? _error;
-  UserInfo? _currentUser;
+
+  List<Property> _properties = [];
+  String? _selectedPropertyId;
+  String? _selectedPropertyName;
 
   static const Color _navy = Color(0xFF1E293B);
 
   @override
   void initState() {
     super.initState();
-    _currentUser = AuthService.currentUser.value;
     _loadTickets();
   }
 
@@ -53,53 +54,33 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
       _error = null;
     });
     try {
-      final tickets = await _ticketService.listTickets();
-      final activeTickets = tickets.where((t) => t.status != 'closed').toList();
-      final userId = _currentUser?.id;
-      final notifications = <_NotificationItem>[];
+      final results = await Future.wait([
+        _ticketService.getProperties(),
+        _ticketService.listTickets(propertyId: _selectedPropertyId),
+        _ticketService.getDashboardNotifications(
+          propertyId: _selectedPropertyId,
+        ),
+      ]);
+      final properties = results[0] as List<Property>;
+      final tickets = results[1] as List<Ticket>;
+      final dashboardNotifications =
+          results[2] as List<DashboardNotification>;
 
-      await Future.wait(
-        activeTickets.map((ticket) async {
-          try {
-            final logs = await _ticketService.getAuditLog(ticket.id);
-            final messages = await _ticketService.getMessages(ticket.id);
-
-            // Status updates not performed by this manager
-            for (final log in logs) {
-              if (log.actorId != userId && log.toStatus != 'opened') {
-                notifications.add(
-                  _NotificationItem(
-                    ticketId: ticket.id,
-                    ticketTitle: ticket.title,
-                    senderName: log.actorName,
-                    body: 'Status updated to ${_statusLabel(log.toStatus)}',
-                    timestamp: log.createdAt,
-                  ),
-                );
-              }
-            }
-
-            // Messages sent by tenants (not by this manager)
-            for (final msg in messages) {
-              if (msg.senderId != userId) {
-                notifications.add(
-                  _NotificationItem(
-                    ticketId: ticket.id,
-                    ticketTitle: ticket.title,
-                    senderName: msg.senderName,
-                    body: msg.content,
-                    timestamp: msg.createdAt,
-                  ),
-                );
-              }
-            }
-          } catch (_) {}
-        }),
-      );
-
-      notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      final notifications =
+          dashboardNotifications
+              .map(
+                (n) => _NotificationItem(
+                  ticketId: n.ticketId,
+                  ticketTitle: n.ticketTitle,
+                  senderName: n.actorName,
+                  body: n.body,
+                  timestamp: n.createdAt,
+                ),
+              )
+              .toList();
 
       setState(() {
+        _properties = properties;
         _tickets = tickets;
         _notifications = notifications;
         _isLoading = false;
@@ -110,17 +91,6 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         _isLoading = false;
       });
     }
-  }
-
-  String _statusLabel(String status) {
-    const labels = {
-      'opened': 'Opened',
-      'acknowledged': 'Acknowledged',
-      'in_progress': 'In Progress',
-      'resolved': 'Resolved',
-      'closed': 'Closed',
-    };
-    return labels[status] ?? status;
   }
 
   String _timeAgo(DateTime dt) {
@@ -161,6 +131,96 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
       default:
         return Icons.build_outlined;
     }
+  }
+
+  void _onPropertyChanged(String? id, String? name) {
+    setState(() {
+      _selectedPropertyId = id;
+      _selectedPropertyName = name;
+    });
+    _loadTickets();
+  }
+
+  Widget _buildPropertyHeader() {
+    final displayName = _selectedPropertyName ?? 'All Properties';
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Flexible(
+          child: Text(
+            'Overview: $displayName',
+            style: GoogleFonts.inter(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: _navy,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 12),
+        PopupMenuButton<String>(
+          offset: const Offset(0, 48),
+          position: PopupMenuPosition.under,
+          onSelected: (value) {
+            if (value == '__all__') {
+              _onPropertyChanged(null, null);
+            } else {
+              final prop = _properties.firstWhere((p) => p.id == value);
+              _onPropertyChanged(prop.id, prop.name);
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem<String>(
+              value: '__all__',
+              child: Text(
+                'All Properties',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _navy,
+                ),
+              ),
+            ),
+            ..._properties.map(
+              (p) => PopupMenuItem<String>(
+                value: p.id,
+                child: Text(
+                  p.name,
+                  style: GoogleFonts.inter(fontSize: 14, color: _navy),
+                ),
+              ),
+            ),
+          ],
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFCBD5E1)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  displayName,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _navy,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 18,
+                  color: Color(0xFF64748B),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -265,25 +325,8 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          // Header
-          Row(
-            children: [
-              Text(
-                'Overview: All Properties',
-                style: GoogleFonts.inter(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: _navy,
-                ),
-              ),
-              const SizedBox(width: 6),
-              const Icon(
-                Icons.keyboard_arrow_down,
-                size: 28,
-                color: Color(0xFF64748B),
-              ),
-            ],
-          ),
+          // Header with property selector
+          _buildPropertyHeader(),
           const SizedBox(height: 24),
           // Stats row
           LayoutBuilder(
@@ -840,6 +883,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                     Expanded(flex: 2, child: _headerCell('Property')),
                     Expanded(flex: 2, child: _headerCell('Category')),
                     Expanded(flex: 2, child: _headerCell('Status')),
+                    Expanded(flex: 2, child: _headerCell('SLA')),
                     Expanded(flex: 2, child: _headerCell('Actions')),
                   ],
                 ),
@@ -957,6 +1001,13 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
               flex: 2,
               child: Align(
                 alignment: Alignment.centerLeft,
+                child: _buildSlaBadge(ticket.slaStatus),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Align(
+                alignment: Alignment.centerLeft,
                 child: TextButton(
                   onPressed: () => context.go('/manager/tickets/${ticket.id}'),
                   style: TextButton.styleFrom(
@@ -1023,6 +1074,36 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
           fontWeight: FontWeight.w600,
           color: entry[1] as Color,
         ),
+      ),
+    );
+  }
+
+  Widget _buildSlaBadge(String status) {
+    final map = <String, List<dynamic>>{
+      'On Track': [const Color(0xFFDCFCE7), const Color(0xFF166534)],
+      'Approaching SLA Limit': [
+        const Color(0xFFFEF3C7),
+        const Color(0xFF92400E),
+      ],
+      'SLA Breached': [const Color(0xFFFEE2E2), const Color(0xFF991B1B)],
+      'Resolved Late': [const Color(0xFFFFEDD5), const Color(0xFF9A3412)],
+    };
+    final entry =
+        map[status] ?? [const Color(0xFFF1F5F9), const Color(0xFF475569)];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: entry[0] as Color,
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Text(
+        status,
+        style: GoogleFonts.inter(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: entry[1] as Color,
+        ),
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

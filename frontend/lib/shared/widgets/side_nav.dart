@@ -125,6 +125,16 @@ class SideNav extends StatelessWidget {
                     isCompact: isCompact,
                     onTap: () {},
                   ),
+                  if (role == 'manager') ...[
+                    const SizedBox(height: 4),
+                    _NavItem(
+                      icon: Icons.insights_outlined,
+                      label: 'Analytics',
+                      isActive: activeRoute == 'analytics',
+                      isCompact: isCompact,
+                      onTap: () => context.go('/manager/analytics'),
+                    ),
+                  ],
                 ],
               ),
             ),

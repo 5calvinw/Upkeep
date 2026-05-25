@@ -14,6 +14,14 @@ class Ticket {
   final String propertyName;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String slaStatus;
+  final int? responseTimeMinutes;
+  final int? resolutionTimeMinutes;
+  final int? closureTimeMinutes;
+  final bool isSlaBreached;
+  final bool isRecurringIssue;
+  final int recurringIssueCount;
+  final String? recurringIssueMessage;
 
   Ticket({
     required this.id,
@@ -31,6 +39,14 @@ class Ticket {
     this.propertyName = '',
     required this.createdAt,
     required this.updatedAt,
+    this.slaStatus = 'On Track',
+    this.responseTimeMinutes,
+    this.resolutionTimeMinutes,
+    this.closureTimeMinutes,
+    this.isSlaBreached = false,
+    this.isRecurringIssue = false,
+    this.recurringIssueCount = 0,
+    this.recurringIssueMessage,
   });
 
   factory Ticket.fromJson(Map<String, dynamic> json) {
@@ -56,7 +72,21 @@ class Ticket {
       propertyName: json['property_name']?.toString() ?? '',
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
+      slaStatus: json['sla_status']?.toString() ?? 'On Track',
+      responseTimeMinutes: _intFromJson(json['response_time_minutes']),
+      resolutionTimeMinutes: _intFromJson(json['resolution_time_minutes']),
+      closureTimeMinutes: _intFromJson(json['closure_time_minutes']),
+      isSlaBreached: json['is_sla_breached'] == true,
+      isRecurringIssue: json['is_recurring_issue'] == true,
+      recurringIssueCount: _intFromJson(json['recurring_issue_count']) ?? 0,
+      recurringIssueMessage: json['recurring_issue_message']?.toString(),
     );
+  }
+
+  static int? _intFromJson(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    return int.tryParse(value.toString());
   }
 
   String get statusLabel {
@@ -113,6 +143,126 @@ class Ticket {
   bool get isClosed => status == 'closed';
 
   String? get photoUrl => photoUrls.isEmpty ? null : photoUrls.first;
+
+  String? get responseTimeLabel => _formatDuration(responseTimeMinutes);
+  String? get resolutionTimeLabel => _formatDuration(resolutionTimeMinutes);
+  String? get closureTimeLabel => _formatDuration(closureTimeMinutes);
+
+  static String? _formatDuration(int? minutes) {
+    if (minutes == null) return null;
+    if (minutes < 60) return '${minutes}m';
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+    if (hours < 24) return mins == 0 ? '${hours}h' : '${hours}h ${mins}m';
+    final days = hours ~/ 24;
+    final remHours = hours % 24;
+    return remHours == 0 ? '${days}d' : '${days}d ${remHours}h';
+  }
+}
+
+class CategoryCount {
+  final String category;
+  final int count;
+
+  CategoryCount({required this.category, required this.count});
+
+  factory CategoryCount.fromJson(Map<String, dynamic> json) {
+    return CategoryCount(
+      category: json['category']?.toString() ?? '',
+      count: Ticket._intFromJson(json['count']) ?? 0,
+    );
+  }
+}
+
+class RecurringIssue {
+  final String unitId;
+  final String unitNumber;
+  final String category;
+  final int count;
+  final String message;
+
+  RecurringIssue({
+    required this.unitId,
+    this.unitNumber = '',
+    required this.category,
+    required this.count,
+    required this.message,
+  });
+
+  factory RecurringIssue.fromJson(Map<String, dynamic> json) {
+    return RecurringIssue(
+      unitId: json['unit_id']?.toString() ?? '',
+      unitNumber: json['unit_number']?.toString() ?? '',
+      category: json['category']?.toString() ?? '',
+      count: Ticket._intFromJson(json['count']) ?? 0,
+      message: json['message']?.toString() ?? '',
+    );
+  }
+}
+
+class TicketAnalyticsSummary {
+  final int totalTickets;
+  final int openTickets;
+  final int resolvedTickets;
+  final int closedTickets;
+  final int? averageResponseTimeMinutes;
+  final int? averageResolutionTimeMinutes;
+  final int slaBreachCount;
+  final List<CategoryCount> mostCommonCategories;
+  final int recurringIssueCount;
+  final List<RecurringIssue> recurringIssues;
+
+  TicketAnalyticsSummary({
+    required this.totalTickets,
+    required this.openTickets,
+    required this.resolvedTickets,
+    required this.closedTickets,
+    this.averageResponseTimeMinutes,
+    this.averageResolutionTimeMinutes,
+    required this.slaBreachCount,
+    this.mostCommonCategories = const [],
+    required this.recurringIssueCount,
+    this.recurringIssues = const [],
+  });
+
+  factory TicketAnalyticsSummary.fromJson(Map<String, dynamic> json) {
+    return TicketAnalyticsSummary(
+      totalTickets: Ticket._intFromJson(json['total_tickets']) ?? 0,
+      openTickets: Ticket._intFromJson(json['open_tickets']) ?? 0,
+      resolvedTickets: Ticket._intFromJson(json['resolved_tickets']) ?? 0,
+      closedTickets: Ticket._intFromJson(json['closed_tickets']) ?? 0,
+      averageResponseTimeMinutes: Ticket._intFromJson(
+        json['average_response_time_minutes'],
+      ),
+      averageResolutionTimeMinutes: Ticket._intFromJson(
+        json['average_resolution_time_minutes'],
+      ),
+      slaBreachCount: Ticket._intFromJson(json['sla_breach_count']) ?? 0,
+      mostCommonCategories:
+          (json['most_common_categories'] as List<dynamic>?)
+              ?.map(
+                (item) =>
+                    CategoryCount.fromJson(Map<String, dynamic>.from(item)),
+              )
+              .toList() ??
+          const [],
+      recurringIssueCount:
+          Ticket._intFromJson(json['recurring_issue_count']) ?? 0,
+      recurringIssues:
+          (json['recurring_issues'] as List<dynamic>?)
+              ?.map(
+                (item) =>
+                    RecurringIssue.fromJson(Map<String, dynamic>.from(item)),
+              )
+              .toList() ??
+          const [],
+    );
+  }
+
+  String? get averageResponseTimeLabel =>
+      Ticket._formatDuration(averageResponseTimeMinutes);
+  String? get averageResolutionTimeLabel =>
+      Ticket._formatDuration(averageResolutionTimeMinutes);
 }
 
 class AuditLogEntry {
@@ -247,4 +397,70 @@ class TicketUrgency {
     {'value': 'normal', 'label': 'Normal'},
     {'value': 'urgent', 'label': 'Urgent'},
   ];
+}
+
+class DashboardNotification {
+  final String ticketId;
+  final String ticketTitle;
+  final String actorName;
+  final String body;
+  final DateTime createdAt;
+
+  DashboardNotification({
+    required this.ticketId,
+    required this.ticketTitle,
+    this.actorName = '',
+    required this.body,
+    required this.createdAt,
+  });
+
+  factory DashboardNotification.fromJson(Map<String, dynamic> json) {
+    return DashboardNotification(
+      ticketId: json['ticket_id']?.toString() ?? '',
+      ticketTitle: json['ticket_title']?.toString() ?? '',
+      actorName: json['actor_name']?.toString() ?? '',
+      body: json['body']?.toString() ?? '',
+      createdAt: DateTime.parse(json['created_at']),
+    );
+  }
+}
+
+class Property {
+  final String id;
+  final String name;
+  final String address;
+
+  Property({
+    required this.id,
+    required this.name,
+    this.address = '',
+  });
+
+  factory Property.fromJson(Map<String, dynamic> json) {
+    return Property(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      address: json['address']?.toString() ?? '',
+    );
+  }
+}
+
+class ManagerUnit {
+  final String id;
+  final String unitNumber;
+  final String propertyName;
+
+  ManagerUnit({
+    required this.id,
+    required this.unitNumber,
+    this.propertyName = '',
+  });
+
+  factory ManagerUnit.fromJson(Map<String, dynamic> json) {
+    return ManagerUnit(
+      id: json['id']?.toString() ?? '',
+      unitNumber: json['unit_number']?.toString() ?? '',
+      propertyName: json['property_name']?.toString() ?? '',
+    );
+  }
 }
