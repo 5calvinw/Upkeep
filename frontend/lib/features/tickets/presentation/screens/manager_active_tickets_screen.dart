@@ -202,83 +202,62 @@ class _ManagerActiveTicketsScreenState
 
   Widget _buildPropertyHeader() {
     final displayName = _selectedPropertyName ?? 'All Properties';
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Flexible(
+    return PopupMenuButton<String>(
+      offset: const Offset(0, 6),
+      position: PopupMenuPosition.under,
+      onSelected: (value) {
+        if (value == '__all__') {
+          _onPropertyChanged(null, null);
+        } else {
+          final prop = _properties.firstWhere((p) => p.id == value);
+          _onPropertyChanged(prop.id, prop.name);
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          value: '__all__',
           child: Text(
-            'Active Tickets — $displayName',
+            'All Properties',
             style: GoogleFonts.inter(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
               color: _navy,
             ),
-            overflow: TextOverflow.ellipsis,
           ),
         ),
-        const SizedBox(width: 12),
-        PopupMenuButton<String>(
-          offset: const Offset(0, 48),
-          position: PopupMenuPosition.under,
-          onSelected: (value) {
-            if (value == '__all__') {
-              _onPropertyChanged(null, null);
-            } else {
-              final prop = _properties.firstWhere((p) => p.id == value);
-              _onPropertyChanged(prop.id, prop.name);
-            }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem<String>(
-              value: '__all__',
-              child: Text(
-                'All Properties',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: _navy,
-                ),
-              ),
-            ),
-            ..._properties.map(
-              (p) => PopupMenuItem<String>(
-                value: p.id,
-                child: Text(
-                  p.name,
-                  style: GoogleFonts.inter(fontSize: 14, color: _navy),
-                ),
-              ),
-            ),
-          ],
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFCBD5E1)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  displayName,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: _navy,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Icon(
-                  Icons.keyboard_arrow_down,
-                  size: 18,
-                  color: Color(0xFF64748B),
-                ),
-              ],
+        ..._properties.map(
+          (p) => PopupMenuItem<String>(
+            value: p.id,
+            child: Text(
+              p.name,
+              style: GoogleFonts.inter(fontSize: 14, color: _navy),
             ),
           ),
         ),
       ],
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Flexible(
+            child: Text(
+              'Active Tickets: $displayName',
+              style: GoogleFonts.inter(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: _navy,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Icon(
+            Icons.keyboard_arrow_down,
+            size: 24,
+            color: _navy,
+          ),
+        ],
+      ),
     );
   }
 
@@ -448,7 +427,7 @@ class _ManagerActiveTicketsScreenState
     return PopupMenuButton<String>(
       initialValue: value,
       onSelected: onChanged,
-      offset: const Offset(0, 36),
+      offset: const Offset(0, 4),
       itemBuilder: (context) => items.entries
           .map(
             (e) => PopupMenuItem<String>(
@@ -460,23 +439,20 @@ class _ManagerActiveTicketsScreenState
             ),
           )
           .toList(),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              items[value] ?? value,
-              style: GoogleFonts.inter(fontSize: 13, color: _navy),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            items[value] ?? value,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: _navy,
             ),
-            const SizedBox(width: 4),
-            Icon(Icons.keyboard_arrow_down, size: 16, color: _navy),
-          ],
-        ),
+          ),
+          const SizedBox(width: 4),
+          const Icon(Icons.keyboard_arrow_down, size: 16, color: _navy),
+        ],
       ),
     );
   }

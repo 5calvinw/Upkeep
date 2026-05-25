@@ -376,7 +376,7 @@ class _TenantActiveTicketsScreenState extends State<TenantActiveTicketsScreen> {
     return PopupMenuButton<String>(
       initialValue: value,
       onSelected: onChanged,
-      offset: const Offset(0, 36),
+      offset: const Offset(0, 4),
       itemBuilder: (context) => items.entries
           .map(
             (e) => PopupMenuItem<String>(
@@ -388,23 +388,20 @@ class _TenantActiveTicketsScreenState extends State<TenantActiveTicketsScreen> {
             ),
           )
           .toList(),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              items[value] ?? value,
-              style: GoogleFonts.inter(fontSize: 13, color: _navy),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            items[value] ?? value,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: _navy,
             ),
-            const SizedBox(width: 4),
-            Icon(Icons.keyboard_arrow_down, size: 16, color: _navy),
-          ],
-        ),
+          ),
+          const SizedBox(width: 4),
+          const Icon(Icons.keyboard_arrow_down, size: 16, color: _navy),
+        ],
       ),
     );
   }
