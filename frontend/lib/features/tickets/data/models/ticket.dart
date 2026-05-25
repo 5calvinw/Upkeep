@@ -398,3 +398,23 @@ class TicketUrgency {
     {'value': 'urgent', 'label': 'Urgent'},
   ];
 }
+
+class ManagerUnit {
+  final String id;
+  final String unitNumber;
+  final String propertyName;
+
+  ManagerUnit({
+    required this.id,
+    required this.unitNumber,
+    this.propertyName = '',
+  });
+
+  factory ManagerUnit.fromJson(Map<String, dynamic> json) {
+    return ManagerUnit(
+      id: json['id']?.toString() ?? '',
+      unitNumber: json['unit_number']?.toString() ?? '',
+      propertyName: json['property_name']?.toString() ?? '',
+    );
+  }
+}

@@ -198,4 +198,32 @@ class TicketService {
       jsonDecode(response.body)['detail'] ?? 'Failed to create ticket',
     );
   }
+
+  Future<List<ManagerUnit>> getUnits() async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/units'),
+      headers: await _headers(),
+    );
+    if (response.statusCode == 200) {
+      final list = jsonDecode(response.body) as List;
+      return list.map((e) => ManagerUnit.fromJson(e)).toList();
+    }
+    throw Exception(
+      jsonDecode(response.body)['detail'] ?? 'Failed to load units',
+    );
+  }
+
+  Future<String> generateInvite(String unitId) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/units/$unitId/invite'),
+      headers: await _headers(),
+    );
+    if (response.statusCode == 200) {
+      final body = jsonDecode(response.body);
+      return body['invite_token'] as String;
+    }
+    throw Exception(
+      jsonDecode(response.body)['detail'] ?? 'Failed to generate invite',
+    );
+  }
 }
