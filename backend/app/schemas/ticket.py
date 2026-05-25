@@ -91,6 +91,14 @@ class RecurringIssueOut(BaseModel):
     message: str
 
 
+class NotificationOut(BaseModel):
+    ticket_id: UUID
+    ticket_title: str
+    actor_name: str = ""
+    body: str
+    created_at: datetime
+
+
 class TicketAnalyticsSummaryOut(BaseModel):
     total_tickets: int
     open_tickets: int

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:frontend/features/auth/data/auth_service.dart';
 import 'package:frontend/features/tickets/data/models/ticket.dart';
 import 'package:frontend/features/tickets/data/services/ticket_service.dart';
 import 'package:frontend/shared/widgets/side_nav.dart';
@@ -36,7 +35,6 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   List<_NotificationItem> _notifications = [];
   bool _isLoading = true;
   String? _error;
-  UserInfo? _currentUser;
 
   List<Property> _properties = [];
   String? _selectedPropertyId;
@@ -47,7 +45,6 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _currentUser = AuthService.currentUser.value;
     _loadTickets();
   }
 
@@ -60,52 +57,27 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
       final results = await Future.wait([
         _ticketService.getProperties(),
         _ticketService.listTickets(propertyId: _selectedPropertyId),
+        _ticketService.getDashboardNotifications(
+          propertyId: _selectedPropertyId,
+        ),
       ]);
       final properties = results[0] as List<Property>;
       final tickets = results[1] as List<Ticket>;
+      final dashboardNotifications =
+          results[2] as List<DashboardNotification>;
 
-      final activeTickets = tickets.where((t) => t.status != 'closed').toList();
-      final userId = _currentUser?.id;
-      final notifications = <_NotificationItem>[];
-
-      await Future.wait(
-        activeTickets.map((ticket) async {
-          try {
-            final logs = await _ticketService.getAuditLog(ticket.id);
-            final messages = await _ticketService.getMessages(ticket.id);
-
-            for (final log in logs) {
-              if (log.actorId != userId && log.toStatus != 'opened') {
-                notifications.add(
-                  _NotificationItem(
-                    ticketId: ticket.id,
-                    ticketTitle: ticket.title,
-                    senderName: log.actorName,
-                    body: 'Status updated to ${_statusLabel(log.toStatus)}',
-                    timestamp: log.createdAt,
-                  ),
-                );
-              }
-            }
-
-            for (final msg in messages) {
-              if (msg.senderId != userId) {
-                notifications.add(
-                  _NotificationItem(
-                    ticketId: ticket.id,
-                    ticketTitle: ticket.title,
-                    senderName: msg.senderName,
-                    body: msg.content,
-                    timestamp: msg.createdAt,
-                  ),
-                );
-              }
-            }
-          } catch (_) {}
-        }),
-      );
-
-      notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      final notifications =
+          dashboardNotifications
+              .map(
+                (n) => _NotificationItem(
+                  ticketId: n.ticketId,
+                  ticketTitle: n.ticketTitle,
+                  senderName: n.actorName,
+                  body: n.body,
+                  timestamp: n.createdAt,
+                ),
+              )
+              .toList();
 
       setState(() {
         _properties = properties;
@@ -119,17 +91,6 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         _isLoading = false;
       });
     }
-  }
-
-  String _statusLabel(String status) {
-    const labels = {
-      'opened': 'Opened',
-      'acknowledged': 'Acknowledged',
-      'in_progress': 'In Progress',
-      'resolved': 'Resolved',
-      'closed': 'Closed',
-    };
-    return labels[status] ?? status;
   }
 
   String _timeAgo(DateTime dt) {

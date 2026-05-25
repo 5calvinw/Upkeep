@@ -2,9 +2,9 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.deps import get_db, get_current_user, require_manager, require_tenant
 from app.models.property import PropertyUnit
@@ -15,7 +15,7 @@ from app.models.user import User, UserRole
 from app.schemas.ticket import (
     TicketCreate, TicketOut, TicketStatusUpdate, TicketDetailOut,
     AuditLogOut, MessageCreate, MessageOut, TicketAnalyticsSummaryOut,
-    CategoryCountOut, RecurringIssueOut,
+    CategoryCountOut, RecurringIssueOut, NotificationOut,
 )
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
@@ -280,7 +280,11 @@ def list_tickets(
             MaintenanceRequest.tenant_id == current_user.id
         ).order_by(MaintenanceRequest.created_at.desc()).all()
     else:
-        query = db.query(MaintenanceRequest)
+        query = db.query(MaintenanceRequest).options(
+            selectinload(MaintenanceRequest.tenant),
+            selectinload(MaintenanceRequest.unit).selectinload(PropertyUnit.property),
+            selectinload(MaintenanceRequest.audit_logs),
+        )
         if property_id is not None:
             query = query.join(PropertyUnit).filter(PropertyUnit.property_id == property_id)
         tickets = query.order_by(MaintenanceRequest.created_at.desc()).all()
@@ -315,7 +319,11 @@ def list_active_tickets(
             .all()
         )
     else:
-        query = db.query(MaintenanceRequest).filter(
+        query = db.query(MaintenanceRequest).options(
+            selectinload(MaintenanceRequest.tenant),
+            selectinload(MaintenanceRequest.unit).selectinload(PropertyUnit.property),
+            selectinload(MaintenanceRequest.audit_logs),
+        ).filter(
             MaintenanceRequest.status != TicketStatus.CLOSED,
         )
         if property_id is not None:
@@ -331,7 +339,11 @@ def get_analytics_summary(
     current_user: User = Depends(require_manager),
     property_id: UUID | None = None,
 ):
-    query = db.query(MaintenanceRequest)
+    query = db.query(MaintenanceRequest).options(
+        selectinload(MaintenanceRequest.tenant),
+        selectinload(MaintenanceRequest.unit).selectinload(PropertyUnit.property),
+        selectinload(MaintenanceRequest.audit_logs),
+    )
     if property_id is not None:
         query = query.join(PropertyUnit).filter(PropertyUnit.property_id == property_id)
     tickets = query.order_by(MaintenanceRequest.created_at.desc()).all()
@@ -392,6 +404,79 @@ def get_analytics_summary(
         recurring_issue_count=len(recurring_issues),
         recurring_issues=recurring_issues,
     )
+
+
+STATUS_DISPLAY: dict[TicketStatus, str] = {
+    TicketStatus.OPENED: "Opened",
+    TicketStatus.ACKNOWLEDGED: "Acknowledged",
+    TicketStatus.IN_PROGRESS: "In Progress",
+    TicketStatus.RESOLVED: "Resolved",
+    TicketStatus.CLOSED: "Closed",
+}
+
+
+@router.get("/notifications", response_model=list[NotificationOut])
+def get_dashboard_notifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_manager),
+    property_id: UUID | None = None,
+    limit: int = 50,
+):
+    ticket_id_query = db.query(MaintenanceRequest.id)
+    if property_id is not None:
+        ticket_id_query = ticket_id_query.join(PropertyUnit).filter(
+            PropertyUnit.property_id == property_id,
+        )
+    visible_ids = [row[0] for row in ticket_id_query.all()]
+    if not visible_ids:
+        return []
+
+    audits = (
+        db.query(AuditLog)
+        .options(joinedload(AuditLog.actor), joinedload(AuditLog.ticket))
+        .filter(
+            AuditLog.ticket_id.in_(visible_ids),
+            AuditLog.actor_id != current_user.id,
+            AuditLog.to_status != TicketStatus.OPENED,
+        )
+        .order_by(AuditLog.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    msgs = (
+        db.query(Message)
+        .options(joinedload(Message.sender), joinedload(Message.ticket))
+        .filter(
+            Message.ticket_id.in_(visible_ids),
+            Message.sender_id != current_user.id,
+        )
+        .order_by(Message.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    items: list[dict] = []
+    for a in audits:
+        status_label = STATUS_DISPLAY.get(a.to_status, a.to_status.value)
+        items.append({
+            "ticket_id": a.ticket_id,
+            "ticket_title": a.ticket.title,
+            "actor_name": a.actor.full_name if a.actor else "",
+            "body": f"Status updated to {status_label}",
+            "created_at": a.created_at,
+        })
+    for m in msgs:
+        items.append({
+            "ticket_id": m.ticket_id,
+            "ticket_title": m.ticket.title,
+            "actor_name": m.sender.full_name if m.sender else "",
+            "body": m.content or "",
+            "created_at": m.created_at,
+        })
+
+    items.sort(key=lambda x: x["created_at"], reverse=True)
+    return items[:limit]
 
 
 @router.get("/{ticket_id}", response_model=TicketDetailOut)
@@ -475,6 +560,7 @@ def get_audit_log(
 
     logs = (
         db.query(AuditLog)
+        .options(joinedload(AuditLog.actor))
         .filter(AuditLog.ticket_id == ticket_id)
         .order_by(AuditLog.created_at.asc())
         .all()
@@ -507,6 +593,7 @@ def list_messages(
 
     messages = (
         db.query(Message)
+        .options(joinedload(Message.sender))
         .filter(Message.ticket_id == ticket_id)
         .order_by(Message.created_at.asc())
         .all()

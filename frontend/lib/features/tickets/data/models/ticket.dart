@@ -399,6 +399,32 @@ class TicketUrgency {
   ];
 }
 
+class DashboardNotification {
+  final String ticketId;
+  final String ticketTitle;
+  final String actorName;
+  final String body;
+  final DateTime createdAt;
+
+  DashboardNotification({
+    required this.ticketId,
+    required this.ticketTitle,
+    this.actorName = '',
+    required this.body,
+    required this.createdAt,
+  });
+
+  factory DashboardNotification.fromJson(Map<String, dynamic> json) {
+    return DashboardNotification(
+      ticketId: json['ticket_id']?.toString() ?? '',
+      ticketTitle: json['ticket_title']?.toString() ?? '',
+      actorName: json['actor_name']?.toString() ?? '',
+      body: json['body']?.toString() ?? '',
+      createdAt: DateTime.parse(json['created_at']),
+    );
+  }
+}
+
 class Property {
   final String id;
   final String name;
