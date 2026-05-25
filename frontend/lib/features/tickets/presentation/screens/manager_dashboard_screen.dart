@@ -38,6 +38,10 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   String? _error;
   UserInfo? _currentUser;
 
+  List<Property> _properties = [];
+  String? _selectedPropertyId;
+  String? _selectedPropertyName;
+
   static const Color _navy = Color(0xFF1E293B);
 
   @override
@@ -53,7 +57,13 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
       _error = null;
     });
     try {
-      final tickets = await _ticketService.listTickets();
+      final results = await Future.wait([
+        _ticketService.getProperties(),
+        _ticketService.listTickets(propertyId: _selectedPropertyId),
+      ]);
+      final properties = results[0] as List<Property>;
+      final tickets = results[1] as List<Ticket>;
+
       final activeTickets = tickets.where((t) => t.status != 'closed').toList();
       final userId = _currentUser?.id;
       final notifications = <_NotificationItem>[];
@@ -64,7 +74,6 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             final logs = await _ticketService.getAuditLog(ticket.id);
             final messages = await _ticketService.getMessages(ticket.id);
 
-            // Status updates not performed by this manager
             for (final log in logs) {
               if (log.actorId != userId && log.toStatus != 'opened') {
                 notifications.add(
@@ -79,7 +88,6 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
               }
             }
 
-            // Messages sent by tenants (not by this manager)
             for (final msg in messages) {
               if (msg.senderId != userId) {
                 notifications.add(
@@ -100,6 +108,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
       notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
       setState(() {
+        _properties = properties;
         _tickets = tickets;
         _notifications = notifications;
         _isLoading = false;
@@ -161,6 +170,96 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
       default:
         return Icons.build_outlined;
     }
+  }
+
+  void _onPropertyChanged(String? id, String? name) {
+    setState(() {
+      _selectedPropertyId = id;
+      _selectedPropertyName = name;
+    });
+    _loadTickets();
+  }
+
+  Widget _buildPropertyHeader() {
+    final displayName = _selectedPropertyName ?? 'All Properties';
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Flexible(
+          child: Text(
+            'Overview: $displayName',
+            style: GoogleFonts.inter(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: _navy,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 12),
+        PopupMenuButton<String>(
+          offset: const Offset(0, 48),
+          position: PopupMenuPosition.under,
+          onSelected: (value) {
+            if (value == '__all__') {
+              _onPropertyChanged(null, null);
+            } else {
+              final prop = _properties.firstWhere((p) => p.id == value);
+              _onPropertyChanged(prop.id, prop.name);
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem<String>(
+              value: '__all__',
+              child: Text(
+                'All Properties',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _navy,
+                ),
+              ),
+            ),
+            ..._properties.map(
+              (p) => PopupMenuItem<String>(
+                value: p.id,
+                child: Text(
+                  p.name,
+                  style: GoogleFonts.inter(fontSize: 14, color: _navy),
+                ),
+              ),
+            ),
+          ],
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFCBD5E1)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  displayName,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _navy,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 18,
+                  color: Color(0xFF64748B),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -265,25 +364,8 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          // Header
-          Row(
-            children: [
-              Text(
-                'Overview: All Properties',
-                style: GoogleFonts.inter(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: _navy,
-                ),
-              ),
-              const SizedBox(width: 6),
-              const Icon(
-                Icons.keyboard_arrow_down,
-                size: 28,
-                color: Color(0xFF64748B),
-              ),
-            ],
-          ),
+          // Header with property selector
+          _buildPropertyHeader(),
           const SizedBox(height: 24),
           // Stats row
           LayoutBuilder(

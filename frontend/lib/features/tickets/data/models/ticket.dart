@@ -399,6 +399,26 @@ class TicketUrgency {
   ];
 }
 
+class Property {
+  final String id;
+  final String name;
+  final String address;
+
+  Property({
+    required this.id,
+    required this.name,
+    this.address = '',
+  });
+
+  factory Property.fromJson(Map<String, dynamic> json) {
+    return Property(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      address: json['address']?.toString() ?? '',
+    );
+  }
+}
+
 class ManagerUnit {
   final String id;
   final String unitNumber;

@@ -132,13 +132,17 @@ def _sla_insights(ticket: MaintenanceRequest) -> dict:
     }
 
 
-def _recurring_issue_map(db: Session) -> dict[tuple[UUID, object], int]:
+def _recurring_issue_map(
+    db: Session,
+    property_id: UUID | None = None,
+) -> dict[tuple[UUID, object], int]:
     since = datetime.now(timezone.utc) - timedelta(days=30)
-    tickets = (
-        db.query(MaintenanceRequest)
-        .filter(MaintenanceRequest.created_at >= since)
-        .all()
+    query = db.query(MaintenanceRequest).filter(
+        MaintenanceRequest.created_at >= since,
     )
+    if property_id is not None:
+        query = query.join(PropertyUnit).filter(PropertyUnit.property_id == property_id)
+    tickets = query.all()
     counts: Counter[tuple[UUID, object]] = Counter(
         (ticket.unit_id, ticket.category) for ticket in tickets
     )
@@ -268,14 +272,18 @@ def create_ticket(
 def list_tickets(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    property_id: UUID | None = None,
 ):
-    recurring_counts = _recurring_issue_map(db)
+    recurring_counts = _recurring_issue_map(db, property_id=property_id)
     if current_user.role == UserRole.TENANT:
         tickets = db.query(MaintenanceRequest).filter(
             MaintenanceRequest.tenant_id == current_user.id
         ).order_by(MaintenanceRequest.created_at.desc()).all()
     else:
-        tickets = db.query(MaintenanceRequest).order_by(MaintenanceRequest.created_at.desc()).all()
+        query = db.query(MaintenanceRequest)
+        if property_id is not None:
+            query = query.join(PropertyUnit).filter(PropertyUnit.property_id == property_id)
+        tickets = query.order_by(MaintenanceRequest.created_at.desc()).all()
 
     return [_ticket_to_detail(t, recurring_counts=recurring_counts) for t in tickets]
 
@@ -284,11 +292,12 @@ def list_tickets(
 def list_active_tickets(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    property_id: UUID | None = None,
 ):
-    recurring_counts = _recurring_issue_map(db)
+    recurring_counts = _recurring_issue_map(db, property_id=property_id)
     if current_user.role == UserRole.TENANT:
-        property_id = _tenant_property_id(db, current_user)
-        if property_id is None:
+        tenant_property_id = _tenant_property_id(db, current_user)
+        if tenant_property_id is None:
             return []
 
         tickets = (
@@ -296,7 +305,7 @@ def list_active_tickets(
             .join(MaintenanceRequest.unit)
             .filter(
                 MaintenanceRequest.status != TicketStatus.CLOSED,
-                PropertyUnit.property_id == property_id,
+                PropertyUnit.property_id == tenant_property_id,
                 or_(
                     MaintenanceRequest.tenant_id == current_user.id,
                     MaintenanceRequest.is_private.is_(False),
@@ -306,12 +315,12 @@ def list_active_tickets(
             .all()
         )
     else:
-        tickets = (
-            db.query(MaintenanceRequest)
-            .filter(MaintenanceRequest.status != TicketStatus.CLOSED)
-            .order_by(MaintenanceRequest.created_at.desc())
-            .all()
+        query = db.query(MaintenanceRequest).filter(
+            MaintenanceRequest.status != TicketStatus.CLOSED,
         )
+        if property_id is not None:
+            query = query.join(PropertyUnit).filter(PropertyUnit.property_id == property_id)
+        tickets = query.order_by(MaintenanceRequest.created_at.desc()).all()
 
     return [_ticket_to_detail(t, recurring_counts=recurring_counts) for t in tickets]
 
@@ -320,9 +329,13 @@ def list_active_tickets(
 def get_analytics_summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_manager),
+    property_id: UUID | None = None,
 ):
-    tickets = db.query(MaintenanceRequest).order_by(MaintenanceRequest.created_at.desc()).all()
-    recurring_counts = _recurring_issue_map(db)
+    query = db.query(MaintenanceRequest)
+    if property_id is not None:
+        query = query.join(PropertyUnit).filter(PropertyUnit.property_id == property_id)
+    tickets = query.order_by(MaintenanceRequest.created_at.desc()).all()
+    recurring_counts = _recurring_issue_map(db, property_id=property_id)
     insights = [_ticket_to_detail(ticket, recurring_counts=recurring_counts) for ticket in tickets]
 
     response_times = [

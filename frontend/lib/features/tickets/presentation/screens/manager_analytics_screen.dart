@@ -19,6 +19,10 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
   bool _isLoading = true;
   String? _error;
 
+  List<Property> _properties = [];
+  String? _selectedPropertyId;
+  String? _selectedPropertyName;
+
   List<ManagerUnit>? _units;
   ManagerUnit? _selectedUnit;
   bool _isInviteLoading = false;
@@ -44,8 +48,14 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
       _error = null;
     });
     try {
-      final summary = await _ticketService.getManagerAnalytics();
+      final results = await Future.wait([
+        _ticketService.getProperties(),
+        _ticketService.getManagerAnalytics(propertyId: _selectedPropertyId),
+      ]);
+      final properties = results[0] as List<Property>;
+      final summary = results[1] as TicketAnalyticsSummary;
       setState(() {
+        _properties = properties;
         _summary = summary;
         _isLoading = false;
       });
@@ -59,7 +69,9 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
 
   Future<void> _loadUnits() async {
     try {
-      final units = await _ticketService.getUnits();
+      final units = await _ticketService.getUnits(
+        propertyId: _selectedPropertyId,
+      );
       setState(() {
         _units = units;
         if (units.isNotEmpty && _selectedUnit == null) {
@@ -67,6 +79,15 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
         }
       });
     } catch (_) {}
+  }
+
+  void _onPropertyChanged(String? id, String? name) {
+    setState(() {
+      _selectedPropertyId = id;
+      _selectedPropertyName = name;
+    });
+    _loadAnalytics();
+    _loadUnits();
   }
 
   Future<void> _generateInvite() async {
@@ -132,6 +153,88 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
       default:
         return Icons.build_outlined;
     }
+  }
+
+  Widget _buildPropertyHeader() {
+    final displayName = _selectedPropertyName ?? 'All Properties';
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Flexible(
+          child: Text(
+            'Maintenance Analytics — $displayName',
+            style: GoogleFonts.inter(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: _navy,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 12),
+        PopupMenuButton<String>(
+          offset: const Offset(0, 48),
+          position: PopupMenuPosition.under,
+          onSelected: (value) {
+            if (value == '__all__') {
+              _onPropertyChanged(null, null);
+            } else {
+              final prop = _properties.firstWhere((p) => p.id == value);
+              _onPropertyChanged(prop.id, prop.name);
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem<String>(
+              value: '__all__',
+              child: Text(
+                'All Properties',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _navy,
+                ),
+              ),
+            ),
+            ..._properties.map(
+              (p) => PopupMenuItem<String>(
+                value: p.id,
+                child: Text(
+                  p.name,
+                  style: GoogleFonts.inter(fontSize: 14, color: _navy),
+                ),
+              ),
+            ),
+          ],
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFCBD5E1)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  displayName,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _navy,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 18,
+                  color: Color(0xFF64748B),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -209,14 +312,7 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Maintenance Analytics',
-            style: GoogleFonts.inter(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: _navy,
-            ),
-          ),
+          _buildPropertyHeader(),
           const SizedBox(height: 24),
           LayoutBuilder(
             builder: (context, constraints) {

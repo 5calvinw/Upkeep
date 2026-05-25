@@ -101,9 +101,29 @@ class TicketService {
     return advanceStatus(ticketId, 'in_progress', note: note);
   }
 
-  Future<TicketAnalyticsSummary> getManagerAnalytics() async {
+  Future<List<Property>> getProperties() async {
     final response = await http.get(
-      Uri.parse('$_baseUrl/tickets/analytics/summary'),
+      Uri.parse('$_baseUrl/properties'),
+      headers: await _headers(),
+    );
+    if (response.statusCode == 200) {
+      final list = jsonDecode(response.body) as List;
+      return list.map((e) => Property.fromJson(e)).toList();
+    }
+    throw Exception(
+      jsonDecode(response.body)['detail'] ?? 'Failed to load properties',
+    );
+  }
+
+  Future<TicketAnalyticsSummary> getManagerAnalytics({
+    String? propertyId,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/tickets/analytics/summary').replace(
+      // ignore: use_null_aware_elements
+      queryParameters: {if (propertyId != null) 'property_id': propertyId},
+    );
+    final response = await http.get(
+      uri,
       headers: await _headers(),
     );
     if (response.statusCode == 200) {
@@ -125,9 +145,13 @@ class TicketService {
     throw Exception('Failed to load user');
   }
 
-  Future<List<Ticket>> listTickets() async {
+  Future<List<Ticket>> listTickets({String? propertyId}) async {
+    final uri = Uri.parse('$_baseUrl/tickets').replace(
+      // ignore: use_null_aware_elements
+      queryParameters: {if (propertyId != null) 'property_id': propertyId},
+    );
     final response = await http.get(
-      Uri.parse('$_baseUrl/tickets'),
+      uri,
       headers: await _headers(),
     );
     if (response.statusCode == 200) {
@@ -139,9 +163,13 @@ class TicketService {
     );
   }
 
-  Future<List<Ticket>> listActiveTickets() async {
+  Future<List<Ticket>> listActiveTickets({String? propertyId}) async {
+    final uri = Uri.parse('$_baseUrl/tickets/active').replace(
+      // ignore: use_null_aware_elements
+      queryParameters: {if (propertyId != null) 'property_id': propertyId},
+    );
     final response = await http.get(
-      Uri.parse('$_baseUrl/tickets/active'),
+      uri,
       headers: await _headers(),
     );
     if (response.statusCode == 200) {
@@ -199,9 +227,13 @@ class TicketService {
     );
   }
 
-  Future<List<ManagerUnit>> getUnits() async {
+  Future<List<ManagerUnit>> getUnits({String? propertyId}) async {
+    final uri = Uri.parse('$_baseUrl/units').replace(
+      // ignore: use_null_aware_elements
+      queryParameters: {if (propertyId != null) 'property_id': propertyId},
+    );
     final response = await http.get(
-      Uri.parse('$_baseUrl/units'),
+      uri,
       headers: await _headers(),
     );
     if (response.statusCode == 200) {

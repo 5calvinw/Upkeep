@@ -26,9 +26,13 @@ class UnitOut(BaseModel):
 def list_units(
     db: Session = Depends(get_db),
     _: User = Depends(require_manager),
+    property_id: UUID | None = None,
 ):
     """Manager-only: list all units with their property name."""
-    units = db.query(PropertyUnit).options(joinedload(PropertyUnit.property)).all()
+    query = db.query(PropertyUnit).options(joinedload(PropertyUnit.property))
+    if property_id is not None:
+        query = query.filter(PropertyUnit.property_id == property_id)
+    units = query.all()
     return [
         UnitOut(
             id=unit.id,
