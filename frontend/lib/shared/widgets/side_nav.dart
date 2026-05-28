@@ -156,14 +156,6 @@ class SideNav extends StatelessWidget {
             child: Column(
               children: [
                 _NavItem(
-                  icon: Icons.person_outline,
-                  label: 'Profile',
-                  isActive: false,
-                  isCompact: isCompact,
-                  onTap: () {},
-                ),
-                const SizedBox(height: 4),
-                _NavItem(
                   icon: Icons.logout,
                   label: 'Sign Out',
                   isActive: false,
