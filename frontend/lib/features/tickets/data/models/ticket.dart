@@ -314,6 +314,43 @@ class AuditLogEntry {
   }
 }
 
+class ManagerAuditLogEntry extends AuditLogEntry {
+  final String ticketId;
+  final String ticketTitle;
+  final String unitNumber;
+  final String propertyName;
+
+  ManagerAuditLogEntry({
+    required super.id,
+    super.fromStatus,
+    required super.toStatus,
+    super.note,
+    required super.actorId,
+    super.actorName = '',
+    required super.createdAt,
+    required this.ticketId,
+    this.ticketTitle = '',
+    this.unitNumber = '',
+    this.propertyName = '',
+  });
+
+  factory ManagerAuditLogEntry.fromJson(Map<String, dynamic> json) {
+    return ManagerAuditLogEntry(
+      id: json['id']?.toString() ?? '',
+      fromStatus: json['from_status']?.toString(),
+      toStatus: json['to_status']?.toString() ?? '',
+      note: json['note']?.toString(),
+      actorId: json['actor_id']?.toString() ?? '',
+      actorName: json['actor_name']?.toString() ?? '',
+      createdAt: DateTime.parse(json['created_at']),
+      ticketId: json['ticket_id']?.toString() ?? '',
+      ticketTitle: json['ticket_title']?.toString() ?? '',
+      unitNumber: json['unit_number']?.toString() ?? '',
+      propertyName: json['property_name']?.toString() ?? '',
+    );
+  }
+}
+
 class TicketMessage {
   final String id;
   final String content;

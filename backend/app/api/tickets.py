@@ -15,7 +15,7 @@ from app.models.user import User, UserRole
 from app.schemas.ticket import (
     TicketCreate, TicketOut, TicketStatusUpdate, TicketDetailOut,
     AuditLogOut, MessageCreate, MessageOut, TicketAnalyticsSummaryOut,
-    CategoryCountOut, RecurringIssueOut, NotificationOut,
+    CategoryCountOut, RecurringIssueOut, NotificationOut, ManagerAuditLogOut,
 )
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
@@ -477,6 +477,52 @@ def get_dashboard_notifications(
 
     items.sort(key=lambda x: x["created_at"], reverse=True)
     return items[:limit]
+
+
+@router.get("/audit-log", response_model=list[ManagerAuditLogOut])
+def get_manager_audit_log(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_manager),
+    property_id: UUID | None = None,
+    limit: int = Query(200, ge=1, le=500),
+):
+    query = (
+        db.query(AuditLog)
+        .join(AuditLog.ticket)
+        .options(
+            joinedload(AuditLog.actor),
+            joinedload(AuditLog.ticket)
+            .joinedload(MaintenanceRequest.unit)
+            .joinedload(PropertyUnit.property),
+        )
+    )
+    if property_id is not None:
+        query = query.join(MaintenanceRequest.unit).filter(
+            PropertyUnit.property_id == property_id,
+        )
+
+    logs = query.order_by(AuditLog.created_at.desc()).limit(limit).all()
+
+    return [
+        ManagerAuditLogOut(
+            id=log.id,
+            ticket_id=log.ticket_id,
+            ticket_title=log.ticket.title if log.ticket else "",
+            unit_number=log.ticket.unit.unit_number
+            if log.ticket and log.ticket.unit
+            else "",
+            property_name=log.ticket.unit.property.name
+            if log.ticket and log.ticket.unit and log.ticket.unit.property
+            else "",
+            from_status=log.from_status,
+            to_status=log.to_status,
+            note=log.note,
+            actor_id=log.actor_id,
+            actor_name=log.actor.full_name if log.actor else "",
+            created_at=log.created_at,
+        )
+        for log in logs
+    ]
 
 
 @router.get("/{ticket_id}", response_model=TicketDetailOut)

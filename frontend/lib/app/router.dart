@@ -11,6 +11,7 @@ import 'package:frontend/features/tickets/presentation/screens/manager_dashboard
 import 'package:frontend/features/tickets/presentation/screens/manager_ticket_detail_screen.dart';
 import 'package:frontend/features/tickets/presentation/screens/manager_active_tickets_screen.dart';
 import 'package:frontend/features/tickets/presentation/screens/manager_analytics_screen.dart';
+import 'package:frontend/features/tickets/presentation/screens/manager_audit_log_screen.dart';
 import 'package:frontend/features/support/presentation/screens/tenant_support_screen.dart';
 import 'package:frontend/features/support/presentation/screens/manager_support_screen.dart';
 
@@ -97,6 +98,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/manager/analytics',
       builder: (context, state) => const ManagerAnalyticsScreen(),
+    ),
+    GoRoute(
+      path: '/manager/audit-log',
+      builder: (context, state) => const ManagerAuditLogScreen(),
     ),
     GoRoute(
       path: '/manager/support',
