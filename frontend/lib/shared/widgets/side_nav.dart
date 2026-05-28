@@ -123,7 +123,9 @@ class SideNav extends StatelessWidget {
                     label: 'Support',
                     isActive: activeRoute == 'support',
                     isCompact: isCompact,
-                    onTap: () {},
+                    onTap: () => context.go(
+                      role == 'manager' ? '/manager/support' : '/support',
+                    ),
                   ),
                   if (role == 'manager') ...[
                     const SizedBox(height: 4),
@@ -133,6 +135,14 @@ class SideNav extends StatelessWidget {
                       isActive: activeRoute == 'analytics',
                       isCompact: isCompact,
                       onTap: () => context.go('/manager/analytics'),
+                    ),
+                    const SizedBox(height: 4),
+                    _NavItem(
+                      icon: Icons.manage_search_outlined,
+                      label: 'Audit Log',
+                      isActive: activeRoute == 'audit',
+                      isCompact: isCompact,
+                      onTap: () => context.go('/manager/audit-log'),
                     ),
                   ],
                 ],
@@ -153,14 +163,6 @@ class SideNav extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _NavItem(
-                  icon: Icons.person_outline,
-                  label: 'Profile',
-                  isActive: false,
-                  isCompact: isCompact,
-                  onTap: () {},
-                ),
-                const SizedBox(height: 4),
                 _NavItem(
                   icon: Icons.logout,
                   label: 'Sign Out',

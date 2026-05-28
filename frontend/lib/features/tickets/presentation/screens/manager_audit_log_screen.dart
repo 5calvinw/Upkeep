@@ -1,44 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:frontend/features/auth/data/auth_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/features/tickets/data/models/ticket.dart';
 import 'package:frontend/features/tickets/data/services/ticket_service.dart';
 import 'package:frontend/shared/widgets/side_nav.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-class ManagerActiveTicketsScreen extends StatefulWidget {
-  const ManagerActiveTicketsScreen({super.key});
+class ManagerAuditLogScreen extends StatefulWidget {
+  const ManagerAuditLogScreen({super.key});
 
   @override
-  State<ManagerActiveTicketsScreen> createState() =>
-      _ManagerActiveTicketsScreenState();
+  State<ManagerAuditLogScreen> createState() => _ManagerAuditLogScreenState();
 }
 
-class _ManagerActiveTicketsScreenState
-    extends State<ManagerActiveTicketsScreen> {
+class _ManagerAuditLogScreenState extends State<ManagerAuditLogScreen> {
   final TicketService _ticketService = TicketService();
 
-  List<Ticket> _tickets = [];
+  List<ManagerAuditLogEntry> _logs = [];
+  List<Property> _properties = [];
   bool _isLoading = true;
   String? _error;
-
-  List<Property> _properties = [];
   String? _selectedPropertyId;
   String? _selectedPropertyName;
-
   String _sortBy = 'date';
   bool _sortAsc = false;
-  String _filterStatus = 'all';
 
   static const Color _navy = Color(0xFF1E293B);
 
   @override
   void initState() {
     super.initState();
-    _loadTickets();
+    _loadAuditLog();
   }
 
-  Future<void> _loadTickets() async {
+  Future<void> _loadAuditLog() async {
     setState(() {
       _isLoading = true;
       _error = null;
@@ -46,13 +40,11 @@ class _ManagerActiveTicketsScreenState
     try {
       final results = await Future.wait([
         _ticketService.getProperties(),
-        _ticketService.listTickets(propertyId: _selectedPropertyId),
+        _ticketService.getManagerAuditLog(propertyId: _selectedPropertyId),
       ]);
-      final properties = results[0] as List<Property>;
-      final tickets = results[1] as List<Ticket>;
       setState(() {
-        _properties = properties;
-        _tickets = tickets.where((t) => t.status != 'closed').toList();
+        _properties = results[0] as List<Property>;
+        _logs = results[1] as List<ManagerAuditLogEntry>;
         _isLoading = false;
       });
     } catch (e) {
@@ -68,27 +60,35 @@ class _ManagerActiveTicketsScreenState
       _selectedPropertyId = id;
       _selectedPropertyName = name;
     });
-    _loadTickets();
+    _loadAuditLog();
   }
 
-  List<Ticket> get _sortedTickets {
-    var list = [..._tickets];
-
-    if (_filterStatus != 'all') {
-      list = list.where((t) => t.status == _filterStatus).toList();
-    }
-
-    list.sort((a, b) {
+  List<ManagerAuditLogEntry> get _sortedLogs {
+    final logs = [..._logs];
+    logs.sort((a, b) {
       int cmp;
       switch (_sortBy) {
-        case 'title':
-          cmp = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+        case 'action':
+          cmp = a.statusLabel.compareTo(b.statusLabel);
+          break;
+        case 'actor':
+          cmp = a.actorName.toLowerCase().compareTo(b.actorName.toLowerCase());
+          break;
+        case 'ticket':
+          cmp = a.ticketTitle.toLowerCase().compareTo(
+            b.ticketTitle.toLowerCase(),
+          );
+          break;
+        case 'unit':
+          cmp = a.unitNumber.compareTo(b.unitNumber);
+          break;
+        case 'property':
+          cmp = a.propertyName.toLowerCase().compareTo(
+            b.propertyName.toLowerCase(),
+          );
           break;
         case 'status':
-          cmp = a.status.compareTo(b.status);
-          break;
-        case 'category':
-          cmp = a.category.compareTo(b.category);
+          cmp = a.toStatus.compareTo(b.toStatus);
           break;
         case 'date':
         default:
@@ -96,8 +96,7 @@ class _ManagerActiveTicketsScreenState
       }
       return _sortAsc ? cmp : -cmp;
     });
-
-    return list;
+    return logs;
   }
 
   String _timeAgo(DateTime dt) {
@@ -108,36 +107,13 @@ class _ManagerActiveTicketsScreenState
     return 'Just now';
   }
 
-  String _categoryLabel(String c) {
-    const labels = {
-      'plumbing': 'Plumbing',
-      'electrical': 'Electrical',
-      'hvac': 'HVAC',
-      'appliance': 'Appliance',
-      'structural': 'Structural',
-      'pest_control': 'Pest Control',
-      'other': 'Other',
-    };
-    return labels[c] ?? c;
-  }
-
-  IconData _categoryIcon(String c) {
-    switch (c) {
-      case 'plumbing':
-        return Icons.plumbing;
-      case 'electrical':
-        return Icons.electrical_services;
-      case 'hvac':
-        return Icons.air;
-      case 'appliance':
-        return Icons.kitchen;
-      case 'structural':
-        return Icons.foundation;
-      case 'pest_control':
-        return Icons.bug_report;
-      default:
-        return Icons.build_outlined;
-    }
+  String _formatDate(DateTime dt) {
+    final local = dt.toLocal();
+    final month = local.month.toString().padLeft(2, '0');
+    final day = local.day.toString().padLeft(2, '0');
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$month/$day/${local.year} $hour:$minute';
   }
 
   @override
@@ -153,7 +129,7 @@ class _ManagerActiveTicketsScreenState
                 Text(_error!, style: const TextStyle(color: Colors.red)),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: _loadTickets,
+                  onPressed: _loadAuditLog,
                   child: const Text('Retry'),
                 ),
               ],
@@ -170,7 +146,7 @@ class _ManagerActiveTicketsScreenState
               scrolledUnderElevation: 0,
               iconTheme: const IconThemeData(color: _navy),
               title: Text(
-                'Active Tickets',
+                'Audit Log',
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -182,7 +158,7 @@ class _ManagerActiveTicketsScreenState
       drawer: isPhone
           ? const Drawer(
               child: SideNav(
-                activeRoute: 'tickets',
+                activeRoute: 'audit',
                 role: 'manager',
                 isCompactOverride: false,
               ),
@@ -193,10 +169,37 @@ class _ManagerActiveTicketsScreenState
           : Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SideNav(activeRoute: 'tickets', role: 'manager'),
+                const SideNav(activeRoute: 'audit', role: 'manager'),
                 Expanded(child: content),
               ],
             ),
+    );
+  }
+
+  Widget _buildContent() {
+    final logs = _sortedLogs;
+    final isPhone = MediaQuery.sizeOf(context).width < 720;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(isPhone ? 20 : 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Operations',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: const Color(0xFF94A3B8),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildPropertyHeader(),
+          const SizedBox(height: 24),
+          _buildSortBar(),
+          const SizedBox(height: 16),
+          _buildTable(logs),
+        ],
+      ),
     );
   }
 
@@ -241,7 +244,7 @@ class _ManagerActiveTicketsScreenState
         children: [
           Flexible(
             child: Text(
-              'Active Tickets: $displayName',
+              'Audit Log: $displayName',
               style: GoogleFonts.inter(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
@@ -251,42 +254,7 @@ class _ManagerActiveTicketsScreenState
             ),
           ),
           const SizedBox(width: 8),
-          const Icon(
-            Icons.keyboard_arrow_down,
-            size: 24,
-            color: _navy,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContent() {
-    final tickets = _sortedTickets;
-
-    final managerName = AuthService.currentUser.value?.fullName ?? 'Manager';
-    final isPhone = MediaQuery.sizeOf(context).width < 720;
-
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(isPhone ? 20 : 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "$managerName's Properties",
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: const Color(0xFF94A3B8),
-            ),
-          ),
-          const SizedBox(height: 8),
-          _buildPropertyHeader(),
-          const SizedBox(height: 24),
-          // Sorting / filter bar
-          _buildSortBar(),
-          const SizedBox(height: 16),
-          // Table
-          _buildTable(tickets),
+          const Icon(Icons.keyboard_arrow_down, size: 24, color: _navy),
         ],
       ),
     );
@@ -294,18 +262,14 @@ class _ManagerActiveTicketsScreenState
 
   Widget _buildSortBar() {
     final isPhone = MediaQuery.sizeOf(context).width < 720;
-    const statuses = {
-      'all': 'All Statuses',
-      'opened': 'Opened',
-      'acknowledged': 'Acknowledged',
-      'in_progress': 'In Progress',
-      'resolved': 'Resolved',
-    };
     const sortOptions = {
       'date': 'Date',
-      'title': 'Title',
+      'action': 'Action',
+      'actor': 'Actor',
+      'ticket': 'Ticket',
+      'unit': 'Unit',
+      'property': 'Property',
       'status': 'Status',
-      'category': 'Category',
     };
 
     return Container(
@@ -327,44 +291,28 @@ class _ManagerActiveTicketsScreenState
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildControlsGroup(statuses, sortOptions),
+                  _buildControls(sortOptions),
                   const SizedBox(width: 16),
-                  _buildTicketCount(),
+                  _buildLogCount(),
                 ],
               ),
             )
           : Row(
               children: [
-                Expanded(child: _buildControlsGroup(statuses, sortOptions)),
+                Expanded(child: _buildControls(sortOptions)),
                 const SizedBox(width: 12),
-                _buildTicketCount(),
+                _buildLogCount(),
               ],
             ),
     );
   }
 
-  Widget _buildControlsGroup(
-    Map<String, String> statuses,
-    Map<String, String> sortOptions,
-  ) {
+  Widget _buildControls(Map<String, String> sortOptions) {
     return Wrap(
       spacing: 10,
       runSpacing: 12,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Text(
-          'Filter:',
-          style: GoogleFonts.inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF64748B),
-          ),
-        ),
-        _buildDropdown(
-          value: _filterStatus,
-          items: statuses,
-          onChanged: (v) => setState(() => _filterStatus = v!),
-        ),
         Text(
           'Sort by:',
           style: GoogleFonts.inter(
@@ -412,13 +360,6 @@ class _ManagerActiveTicketsScreenState
     );
   }
 
-  Widget _buildTicketCount() {
-    return Text(
-      '${_sortedTickets.length} ticket${_sortedTickets.length == 1 ? '' : 's'}',
-      style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF94A3B8)),
-    );
-  }
-
   Widget _buildDropdown({
     required String value,
     required Map<String, String> items,
@@ -457,11 +398,18 @@ class _ManagerActiveTicketsScreenState
     );
   }
 
-  Widget _buildTable(List<Ticket> tickets) {
+  Widget _buildLogCount() {
+    return Text(
+      '${_sortedLogs.length} event${_sortedLogs.length == 1 ? '' : 's'}',
+      style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF94A3B8)),
+    );
+  }
+
+  Widget _buildTable(List<ManagerAuditLogEntry> logs) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final tableWidth = constraints.maxWidth < 840
-            ? 840.0
+        final tableWidth = constraints.maxWidth < 980
+            ? 980.0
             : constraints.maxWidth;
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -481,7 +429,6 @@ class _ManagerActiveTicketsScreenState
               ),
               child: Column(
                 children: [
-                  // Header
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
@@ -497,22 +444,23 @@ class _ManagerActiveTicketsScreenState
                     ),
                     child: Row(
                       children: [
-                        Expanded(flex: 3, child: _headerCell('Title')),
+                        Expanded(flex: 2, child: _headerCell('When')),
+                        Expanded(flex: 2, child: _headerCell('Action')),
+                        Expanded(flex: 2, child: _headerCell('Actor')),
+                        Expanded(flex: 3, child: _headerCell('Ticket')),
                         Expanded(flex: 1, child: _headerCell('Unit')),
                         Expanded(flex: 2, child: _headerCell('Property')),
-                        Expanded(flex: 2, child: _headerCell('Category')),
                         Expanded(flex: 2, child: _headerCell('Status')),
-                        Expanded(flex: 2, child: _headerCell('SLA')),
-                        Expanded(flex: 2, child: _headerCell('Actions')),
+                        Expanded(flex: 2, child: _headerCell('Note')),
                       ],
                     ),
                   ),
-                  if (tickets.isEmpty)
+                  if (logs.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 32),
                       child: Center(
                         child: Text(
-                          'No active tickets',
+                          'No audit events',
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             color: const Color(0xFF94A3B8),
@@ -521,7 +469,7 @@ class _ManagerActiveTicketsScreenState
                       ),
                     )
                   else
-                    ...tickets.map((t) => _buildRow(t)),
+                    ...logs.map((log) => _buildRow(log)),
                 ],
               ),
             ),
@@ -540,9 +488,9 @@ class _ManagerActiveTicketsScreenState
     ),
   );
 
-  Widget _buildRow(Ticket ticket) {
+  Widget _buildRow(ManagerAuditLogEntry log) {
     return InkWell(
-      onTap: () => context.go('/manager/tickets/${ticket.id}'),
+      onTap: () => context.go('/manager/tickets/${log.ticketId}'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: const BoxDecoration(
@@ -552,24 +500,21 @@ class _ManagerActiveTicketsScreenState
         ),
         child: Row(
           children: [
-            // Title
             Expanded(
-              flex: 3,
+              flex: 2,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    ticket.title,
+                    _formatDate(log.createdAt),
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: _navy,
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
                   ),
                   Text(
-                    _timeAgo(ticket.createdAt).toUpperCase(),
+                    _timeAgo(log.createdAt).toUpperCase(),
                     style: GoogleFonts.inter(
                       fontSize: 10,
                       color: const Color(0xFF94A3B8),
@@ -578,89 +523,85 @@ class _ManagerActiveTicketsScreenState
                 ],
               ),
             ),
-            // Unit
-            Expanded(
-              flex: 1,
-              child: Text(
-                ticket.unitNumber.isNotEmpty ? ticket.unitNumber : '—',
-                style: GoogleFonts.inter(fontSize: 13, color: _navy),
-              ),
-            ),
-            // Property
+            Expanded(flex: 2, child: _buildAction(log)),
             Expanded(
               flex: 2,
               child: Text(
-                ticket.propertyName.isNotEmpty ? ticket.propertyName : '—',
+                log.actorName.isNotEmpty ? log.actorName : 'Unknown',
                 style: GoogleFonts.inter(fontSize: 13, color: _navy),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            // Category
             Expanded(
-              flex: 2,
-              child: Row(
-                children: [
-                  Icon(
-                    _categoryIcon(ticket.category),
-                    size: 14,
-                    color: const Color(0xFF64748B),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _categoryLabel(ticket.category),
-                    style: GoogleFonts.inter(fontSize: 13, color: _navy),
-                  ),
-                ],
+              flex: 3,
+              child: Text(
+                log.ticketTitle.isNotEmpty ? log.ticketTitle : 'Untitled',
+                style: GoogleFonts.inter(fontSize: 13, color: _navy),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            // Status
             Expanded(
-              flex: 2,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: _buildStatusBadge(ticket.status),
+              flex: 1,
+              child: Text(
+                log.unitNumber.isNotEmpty ? log.unitNumber : '-',
+                style: GoogleFonts.inter(fontSize: 13, color: _navy),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             Expanded(
               flex: 2,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: _buildSlaBadge(ticket.slaStatus),
+              child: Text(
+                log.propertyName.isNotEmpty ? log.propertyName : '-',
+                style: GoogleFonts.inter(fontSize: 13, color: _navy),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            // Actions
             Expanded(
               flex: 2,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: () => context.go('/manager/tickets/${ticket.id}'),
-                  style: TextButton.styleFrom(
-                    backgroundColor: const Color(0xFFF1F5F9),
-                    foregroundColor: _navy,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    'View Details',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                child: _buildStatusBadge(log.toStatus),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                log.note?.isNotEmpty == true ? log.note! : '-',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: const Color(0xFF64748B),
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAction(ManagerAuditLogEntry log) {
+    final isOpened = log.fromStatus == null && log.toStatus == 'opened';
+    return Row(
+      children: [
+        Icon(
+          isOpened ? Icons.add_circle_outline : Icons.sync_alt_outlined,
+          size: 16,
+          color: const Color(0xFF64748B),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            isOpened ? 'New Ticket' : log.statusLabel,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: _navy,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 
@@ -694,35 +635,6 @@ class _ManagerActiveTicketsScreenState
       ),
       child: Text(
         entry[2] as String,
-        style: GoogleFonts.inter(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: entry[1] as Color,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSlaBadge(String status) {
-    final map = <String, List<dynamic>>{
-      'On Track': [const Color(0xFFDCFCE7), const Color(0xFF166534)],
-      'Approaching SLA Limit': [
-        const Color(0xFFFEF3C7),
-        const Color(0xFF92400E),
-      ],
-      'SLA Breached': [const Color(0xFFFEE2E2), const Color(0xFF991B1B)],
-      'Resolved Late': [const Color(0xFFFFEDD5), const Color(0xFF9A3412)],
-    };
-    final entry =
-        map[status] ?? [const Color(0xFFF1F5F9), const Color(0xFF475569)];
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: entry[0] as Color,
-        borderRadius: BorderRadius.circular(5),
-      ),
-      child: Text(
-        status,
         style: GoogleFonts.inter(
           fontSize: 11,
           fontWeight: FontWeight.w600,

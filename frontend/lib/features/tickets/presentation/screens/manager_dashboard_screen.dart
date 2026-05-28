@@ -30,6 +30,7 @@ class ManagerDashboardScreen extends StatefulWidget {
 }
 
 class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
+  static const double _propertyMenuWidth = 240;
   final TicketService _ticketService = TicketService();
   List<Ticket> _tickets = [];
   List<_NotificationItem> _notifications = [];
@@ -144,6 +145,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   Widget _buildPropertyHeader() {
     final displayName = _selectedPropertyName ?? 'All Properties';
     return Row(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Flexible(
@@ -157,10 +159,13 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 4),
         PopupMenuButton<String>(
-          offset: const Offset(0, 48),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: _propertyMenuWidth),
+          offset: const Offset(-(_propertyMenuWidth - 24), 6),
           position: PopupMenuPosition.under,
+          tooltip: 'Filter properties',
           onSelected: (value) {
             if (value == '__all__') {
               _onPropertyChanged(null, null);
@@ -191,32 +196,10 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
               ),
             ),
           ],
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFCBD5E1)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  displayName,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: _navy,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Icon(
-                  Icons.keyboard_arrow_down,
-                  size: 18,
-                  color: Color(0xFF64748B),
-                ),
-              ],
-            ),
+          child: const Icon(
+            Icons.keyboard_arrow_down,
+            size: 24,
+            color: _navy,
           ),
         ),
       ],

@@ -48,6 +48,13 @@ class AuditLogOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ManagerAuditLogOut(AuditLogOut):
+    ticket_id: UUID
+    ticket_title: str = ""
+    unit_number: str = ""
+    property_name: str = ""
+
+
 class MessageCreate(BaseModel):
     content: str = ""
     photo_url: str | None = None

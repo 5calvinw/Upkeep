@@ -21,4 +21,7 @@ class User(Base, TimestampMixin):
     managed_properties = relationship("Property", back_populates="manager")
     requests = relationship("MaintenanceRequest", back_populates="tenant")
     sent_messages = relationship("Message", back_populates="sender")
+    support_threads = relationship("SupportThread", foreign_keys="SupportThread.tenant_id", back_populates="tenant")
+    managed_support_threads = relationship("SupportThread", foreign_keys="SupportThread.manager_id", back_populates="manager")
+    sent_support_messages = relationship("SupportMessage", back_populates="sender")
     audit_actions = relationship("AuditLog", back_populates="actor")

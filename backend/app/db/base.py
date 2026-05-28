@@ -4,4 +4,5 @@ from app.models.user import User  # noqa
 from app.models.property import Property, PropertyUnit  # noqa
 from app.models.ticket import MaintenanceRequest  # noqa
 from app.models.message import Message  # noqa
+from app.models.support import SupportThread, SupportMessage  # noqa
 from app.models.audit_log import AuditLog  # noqa

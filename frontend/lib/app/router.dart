@@ -11,6 +11,9 @@ import 'package:frontend/features/tickets/presentation/screens/manager_dashboard
 import 'package:frontend/features/tickets/presentation/screens/manager_ticket_detail_screen.dart';
 import 'package:frontend/features/tickets/presentation/screens/manager_active_tickets_screen.dart';
 import 'package:frontend/features/tickets/presentation/screens/manager_analytics_screen.dart';
+import 'package:frontend/features/tickets/presentation/screens/manager_audit_log_screen.dart';
+import 'package:frontend/features/support/presentation/screens/tenant_support_screen.dart';
+import 'package:frontend/features/support/presentation/screens/manager_support_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/login',
@@ -41,6 +44,7 @@ final appRouter = GoRouter(
         (path == '/dashboard' ||
             path == '/tickets' ||
             path == '/tickets/new' ||
+            path == '/support' ||
             path.startsWith('/tickets/'))) {
       return '/manager/dashboard';
     }
@@ -74,6 +78,10 @@ final appRouter = GoRouter(
       builder: (context, state) => const TenantActiveTicketsScreen(),
     ),
     GoRoute(
+      path: '/support',
+      builder: (context, state) => const TenantSupportScreen(),
+    ),
+    GoRoute(
       path: '/tickets/:id',
       builder: (context, state) =>
           TicketDetailScreen(ticketId: state.pathParameters['id']!),
@@ -90,6 +98,14 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/manager/analytics',
       builder: (context, state) => const ManagerAnalyticsScreen(),
+    ),
+    GoRoute(
+      path: '/manager/audit-log',
+      builder: (context, state) => const ManagerAuditLogScreen(),
+    ),
+    GoRoute(
+      path: '/manager/support',
+      builder: (context, state) => const ManagerSupportScreen(),
     ),
     GoRoute(
       path: '/manager/tickets/:id',
